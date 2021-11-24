@@ -27,6 +27,7 @@
   tail -f make.err  # Follow progress bit more relaxedly
 #+end_src
 
+
 *** Downloading and building GstLAL
 Get GstLAL:
 #+begin_src bash
@@ -84,7 +85,7 @@ This will install ~*.yml~ files in ~~/.config/gstlal/~.
 
 **** Edit config.yml
 Set e.g.:
-#+begin_src conf
+#+begin_src yaml
   start: 1187000000
   stop: 1187100000
 
@@ -101,19 +102,19 @@ Set e.g.:
 #+end_src
   
 If your username doesn't match your LIGO albert.einstein name, you need to provide the latter:
-#+begin_src conf
+#+begin_src yaml
    condor:
      accounting-group-user: albert.einstein
 #+end_src
 
 You may have to add or update the path to the singularity image:
-#+begin_src conf
+#+begin_src yaml
    condor:
      singularity-image: /cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master            
 #+end_src
 
 If running on an LDAS cluster rather than OSG, replace the profile:
-#+begin_src conf
+#+begin_src yaml
    condor:
      profile: ldas
 #+end_src
