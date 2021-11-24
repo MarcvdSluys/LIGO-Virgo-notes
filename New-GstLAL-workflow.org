@@ -1,0 +1,219 @@
+** New GstLAL workflow
++ [2021-11-23 Tue]
++ https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html
+
+*** Set up and enter singularity container
++ https://lscsoft.docs.ligo.org/gstlal/installation.html#singularity-container
+  #+begin_src bash
+    # Build writable container in subdir gstlal-dev-container/:
+    singularity build --sandbox --fix-perms gstlal-dev-container docker://containers.ligo.org/lscsoft/gstlal:master
+    mkdir gstlal-dev-container/hdfs gstlal-dev-container/archive gstlal-dev-container/cvmfs  # They may be needed later
+    
+    # Enter container (needed?):
+    singularity run --writable gstlal-dev-container
+  #+end_src
+  
+*** Download and build the GstLAL dependencies
+#+begin_src bash
+  mkdir gstlal-deps && cd gstlal-deps
+  wget https://git.ligo.org/lscsoft/gstlal/-/raw/master/gstlal-inspiral/share/post_O3/optimized/Makefile.ligosoftware_gcc_deps -O Makefile  # Download Makefile
+  less Makefile  # Verify the make instructions, `q` to exit
+
+  make deps_env.sh  # make deps_env.sh
+  ls -l  # check the result
+  source deps_env.sh  # source ('run') the script
+  time make 1> make.out 2> make.err &  # build the dependencies, ~16 min
+  tail -f make.out  # Follow installation (Ctrl-C to kill)
+  tail -f make.err  # Follow progress bit more relaxedly
+#+end_src
+
+**** Debugging                                                  :noexport:
++ doesn't work (not needed?) in container
+  - ERROR:  $ source deps_env.sh: bash: /ldcg/intel/2018u3/bin/compilervars.sh: No such file or directory
+    - ~/lcdg/~ exists outside, but not inside container
+    - [ ] do I need to build deps at all? - try building GstLAL w/o deps
+      - need to set ~DEPS_DIR~ in the GstLAL Makefile...
+      - to ~/~ ?
+        - NO, when making GstLAL (env): ~bash: //deps_env.sh: No such file or directory~
+        - no ~deps_env.sh~ in ~PATH~
+          
+  - when building anyway:
+    - checking whether the C compiler works... no
+    - configure: error: C compiler cannot create executables
+      
++ Do I need to install site-specific profiles?
+  - https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html#set-up-workflow
+  - singularity exec <image> gstlal_grid_profile list  # See which are available
+    - ldas, icds, ...
+  - singularity exec <image> gstlal_grid_profile install  # Install (one, all?)
+  - specify in ~config.yml~:
+    #+begin_src conf
+      condor:
+        profile: ldas
+    #+end_src
+
++ no longer works *outside* container (fftw): [2021-11-23 Tue 10:21]
+  - checking whether the C compiler works... yes
+  - configure: error: cannot run C compiled programs.
+  - works again [2021-11-23 Tue 21:13]
+
+*** Downloading and building GstLAL
+Get GstLAL:
+#+begin_src bash
+  cd ..  # Get out of the gstlal-deps dir
+  git clone git@git.ligo.org:lscsoft/gstlal.git    # git/ssh - need key setup?  ~30s  
+  # git clone https://git.ligo.org/lscsoft/gstlal.git  # can't push over https?
+#+end_src
++ the ~git/ssh~ version should use your ssh key if properly set up
++ it will ask your passphrase several times, so a key agent is already useful here
+
+Build GstLAL:
+#+begin_src bash
+  mkdir gstlal-build && cd gstlal-build/
+  wget https://git.ligo.org/lscsoft/gstlal/-/raw/master/gstlal-inspiral/share/post_O3/optimized/Makefile.ligosoftware_gcc_gstlal -O Makefile  # Download Makefile
+  less Makefile  # Verify the make instructions
+#+end_src
+Edit ~Makefile~:
+ 1. set the ~DEPS_DIR:=~ variable to the directory in which you built the dependencies,
+    e.g. ~../gstlal-deps~
+ 2. edit the ~GSTLAL_GIT_BRANCH~ variable if you want a different branch than ~master~
+
+Build GstLAL:
+#+begin_src bash
+  make env.sh
+  source env.sh
+  time make -f Makefile 1> make.out 2> make.err &  # ~25 min
+#+end_src
++ this downloads and builds:
+  1. lalsuite: lal, lalframe, lalmetaio, lalsimulation, lalburst, lalinspiral, lalpulsar, lalinference, lalapps
+  2. gstlal: gstlal, gstlal-ugly, gstlal-burst, gstlal-calibration, gstlal-inspiral
+
+*** Set up the workflow (DAG)
+https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html
+
+**** Create a dir and download files
+Download a default config file, mass model and template bank:
+#+begin_src bash
+  cd ..  # Get out of the gstlal-build dir
+  mkdir run-DAG-01 && cd run-DAG-01
+  
+  curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/config.yml
+  curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/mass_model/mass_model_small.h5
+  curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/bank/gstlal_bank_small.xml.gz
+#+end_src
+
+**** Install the site-specific profiles
++ Needed only once per user/cluster
+
+#+begin_src bash
+  gstlal_grid_profile install
+  # singularity exec <image> gstlal_grid_profile install  # Same effect
+  gstlal_grid_profile list  # List installed profiles
+#+end_src
+This will install ~*.yml~ files in ~~/.config/gstlal/~.
+
+**** Edit config.yml
+Set e.g.:
+#+begin_src conf
+  start: 1187000000
+  stop: 1187100000
+
+  instruments: H1L1
+
+  data:
+    template-bank: gstlal_bank_small.xml.gz
+
+  prior:
+    mass-model: mass_model_small.h5
+         
+  summary:
+    webdir: ~/public_html/run-01
+#+end_src
+  
+If your username doesn't match your LIGO albert.einstein name, you need to provide the latter:
+#+begin_src conf
+   condor:
+     accounting-group-user: albert.einstein
+#+end_src
+
+You may have to add or update the path to the singularity image:
+#+begin_src conf
+   condor:
+     singularity-image: /cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master            
+#+end_src
+
+If running on an LDAS cluster rather than OSG, replace the profile:
+#+begin_src conf
+   condor:
+     profile: ldas
+#+end_src
+
+See https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html#analysis-configuration for more details on the
+ configuration file.
+
+**** Create the Makefile
+#+begin_src bash
+  gstlal_inspiral_workflow init -c config.yml
+  # singularity exec <image> gstlal_inspiral_workflow init -c config.yml  # Doesn't work
+  # singularity exec <image> gstlal_inspiral_workflow init -c config.yml -w injection  # Injection only
+#+end_src
+
+***** Debugging                                                  :noexport:
+ 1. When running with singularity
+   #+begin_src bash
+     ln -s ../../test_singularity_20211116_1446/gstlal-dev-container .
+     singularity exec gstlal-dev-container/ gstlal_inspiral_workflow init -c config.yml
+     ModuleNotFoundError: No module named '_lal'
+   #+end_src
+ 2. [ ] Stefano uses - what does it mean?
+   #+begin_src conf
+     directives:
+       environment: '"LAL_DATA_PATH=/home/cbc/ROM_data SINGULARITY_BIND=/home/cbc/ROM_data"'
+   #+end_src
+    
+**** Set up a proxy if accessing non-public (GWOSC) data (*skipped for now*)
+#+begin_src bash
+  X509_USER_PROXY=/path/to/x509_proxy ligo-proxy-init -p albert.einstein
+#+end_src
+
+Edit ~config.yml~:
+#+begin_src conf
+  source:
+    x509-proxy: /path/to/x509_proxy
+#+end_src
+   
+**** Build the workflow/DAG file for submission
+#+begin_src bash
+  make dag
+  # singularity exec -B $TMPDIR <image> make dag
+#+end_src
+
+***** Debugging
+1) make dag  (w/o singularity):
+   + ImportError: No module named _lal
+   + goes away after trying a few times
+2) make dag:
+   + You must set the environment variable GSTLAL_FIR_WHITEN to either 0 or 1.  1 enables causal whitening. 0
+     is the traditional acausal whitening filter
+   + ~export GSTLAL_FIR_WHITEN=0~  Works!  What does it mean?
+
+*** Launch workflows
+#+begin_src bash
+  make launch  # Run condor_submit_dag
+  condor_q     # Monitor your dag
+#+end_src
+
+**** Debugging                                                  :noexport:
+1) make launch
+   #+begin_src bash
+     Submitting job(s)
+     ERROR: store_cred of LOCAL credential failed - The credmon did not process credentials within the timeout period
+     ERROR: condor_submit failed; aborting.
+     make: *** [launch] Error 1
+   #+end_src
+
+*** Generate summary page
+#+begin_src bash
+  make summary
+  # singularity exec -B $TMPDIR <image> make summary
+#+end_src
