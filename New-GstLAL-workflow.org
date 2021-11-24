@@ -27,7 +27,6 @@
   tail -f make.err  # Follow progress bit more relaxedly
 #+end_src
 
-
 *** Downloading and building GstLAL
 Get GstLAL:
 #+begin_src bash
@@ -81,7 +80,7 @@ Download a default config file, mass model and template bank:
   # singularity exec <image> gstlal_grid_profile install  # Same effect
   gstlal_grid_profile list  # List installed profiles
 #+end_src
-This will install ~*.yml~ files in ~~/.config/gstlal/~.
+This will install ~*.yml~ files in =~/.config/gstlal/=.
 
 **** Edit config.yml
 Set e.g.:
@@ -128,6 +127,32 @@ See https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html#analysis-configuratio
   # singularity exec <image> gstlal_inspiral_workflow init -c config.yml  # Doesn't work
   # singularity exec <image> gstlal_inspiral_workflow init -c config.yml -w injection  # Injection only
 #+end_src
+
+**** Set up a proxy if accessing non-public (GWOSC) data (*skipped for now*)
+#+begin_src bash
+  X509_USER_PROXY=/path/to/x509_proxy ligo-proxy-init -p albert.einstein
+#+end_src
+
+Edit ~config.yml~:
+#+begin_src yaml
+  source:
+    x509-proxy: /path/to/x509_proxy
+#+end_src
+   
+**** Build the workflow/DAG file for submission
+#+begin_src bash
+  make dag
+  # singularity exec -B $TMPDIR <image> make dag
+#+end_src
+
+***** Debugging
+1) make dag  (w/o singularity):
+   + ImportError: No module named _lal
+   + goes away after trying a few times
+2) make dag:
+   + You must set the environment variable GSTLAL_FIR_WHITEN to either 0 or 1.  1 enables causal whitening. 0
+     is the traditional acausal whitening filter
+   + ~export GSTLAL_FIR_WHITEN=0~  Works!  What does it mean?
 
 *** Launch workflows
 #+begin_src bash
