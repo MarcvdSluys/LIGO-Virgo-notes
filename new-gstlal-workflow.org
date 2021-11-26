@@ -1,4 +1,4 @@
-# Created 2021-11-25 Thu 16:50
+# Created 2021-11-26 Fri 08:31
 #+title: New GstLAL workflow
 #+author: Marc van der Sluys
 - [2021-11-23 Tue]
@@ -199,8 +199,13 @@ resource one of the env files.
      cd -
    #+end_src
 2. before (re)creating a (new) DAG:
-   #+begin_src bash
-     cd gstlal-build
-     source env.sh
-     cd -
-   #+end_src
+   1. Resource the GstLAL environment:
+      #+begin_src bash
+        cd gstlal-build
+        source env.sh
+        cd -
+      #+end_src
+   2. Resetup your proxy
+      #+begin_src bash
+        X509_USER_PROXY=/path/to/x509_proxy ligo-proxy-init -p albert.einstein
+      #+end_src
