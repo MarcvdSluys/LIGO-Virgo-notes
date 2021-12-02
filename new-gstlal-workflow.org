@@ -1,4 +1,4 @@
-# Created 2021-11-26 Fri 08:31
+# Created 2021-12-02 Thu 13:51
 #+title: New GstLAL workflow
 #+author: Marc van der Sluys
 - [2021-11-23 Tue]
@@ -60,7 +60,7 @@ Build GstLAL:
   1. lalsuite: lal, lalframe, lalmetaio, lalsimulation, lalburst, lalinspiral, lalpulsar, lalinference, lalapps
   2. gstlal: gstlal, gstlal-ugly, gstlal-burst, gstlal-calibration, gstlal-inspiral
 
-* Set up the workflow (DAG)
+* Set up the workflow/DAG
 https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html
 
 ** Create a dir and download files
@@ -75,7 +75,7 @@ Download a default config file, mass model and template bank:
 #+end_src
 
 ** Install the site-specific profiles
-- Needed only once per user/cluster
+- Needed only *once* per user/cluster
 
 #+begin_src bash
   gstlal_grid_profile install
@@ -120,10 +120,16 @@ If running on an LDAS cluster rather than OSG, replace the profile:
     profile: ldas
 #+end_src
 
+Do you need to change the data server?
+#+begin_src yaml
+  source:
+    data-find-server: ldr.ldas.cit:80
+#+end_src
+
 See https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html#analysis-configuration for more details on the
  configuration file.
 
-** Create the Makefile
+** Create the workflow/DAG Makefile
 #+begin_src bash
   gstlal_inspiral_workflow init -c config.yml
   # singularity exec <image> gstlal_inspiral_workflow init -c config.yml  # Doesn't work
@@ -138,7 +144,7 @@ This creates a file called ~Makefile~
 - This asks for your LIGO password and creates a file called ~x509_proxy~ at the indicated location with
   certificates and a private key.
 - Note that this must be run outside Singularity.
-- Check: once per user/cluster?
+- The proxy is valid for a few hours *(CHECK: correct?)*
 
 Edit ~config.yml~ and set the correct path to the proxy file:
 #+begin_src yaml
@@ -163,7 +169,7 @@ traditional acausal whitening filter, 1 enables causal whitening.
    - ImportError: No module named _lal
      - goes away after trying a few times
 
-* Launch the workflows/DAG
+* Launch the workflow/DAG
 #+begin_src bash
   make launch  # Submit your DAG
   condor_q     # Monitor your DAG
@@ -209,3 +215,54 @@ resource one of the env files.
       #+begin_src bash
         X509_USER_PROXY=/path/to/x509_proxy ligo-proxy-init -p albert.einstein
       #+end_src
+
+* Diagnosing and handling issues
+- The file ~<name>_dag.dag.dagman.out~ contains output of your job.
+
+** Final nodes status
+You can use e.g. dagman-out-final-status [fn:1] to grep the final status of the nodes:
+#+begin_src bash
+  $ dagman-out-final-status
+
+  full_inspiral_dag.dag.dagman.out:
+  12/01/21 14:09:45 Of 150 nodes total:
+  12/01/21 14:09:45  Done     Pre   Queued    Post   Ready   Un-Ready   Failed
+  12/01/21 14:09:45   ===     ===      ===     ===     ===        ===      ===
+  12/01/21 14:09:45    89       0        0       0       0         41       20
+  12/01/21 14:09:45 0 job proc(s) currently held
+#+end_src
+In this case, 20 nodes failed
+
+[fn:1] https://github.com/MarcvdSluys/MyTerminalConfig/blob/master/bin/dagman-out-final-status
+
+** List of errors
+A list of errors, if any, can be shown using e.g. dagman-out-list-errors [fn:2]:
+#+begin_src bash
+  $ dagman-out-list-errors
+
+  full_inspiral_dag.dag.dagman.out:
+  12/01/21 14:09:45 ---------------------- Job ----------------------
+  12/01/21 14:09:45       Node Name: cluster_triggers_by_snr.00000
+  12/01/21 14:09:45            Noop: false
+  12/01/21 14:09:45          NodeID: 24
+  12/01/21 14:09:45     Node Status: STATUS_ERROR
+  12/01/21 14:09:45 Node return val: 1
+  12/01/21 14:09:45           Error: Job proc (245431516.0.0) failed with status 1 (after 3 node retries)
+  12/01/21 14:09:45 Job Submit File: cluster_triggers_by_snr.sub
+  12/01/21 14:09:45           Retry: 3
+  12/01/21 14:09:45  HTCondor Job ID: (245431516.0.0)
+  12/01/21 14:09:45 PARENTS: gstlal_inspiral.00000 WAITING: 0 CHILDREN: gstlal_inspiral_calc_likelihood.00000
+  etc...
+#+end_src
+
+Note that in this example, the Node name lists ~cluster_triggers_by_snr.XXXXXX~ as the culprit.  In the
+subdirectory ~logs/~ you can find files called ~cluster_triggers_by_snr_XXXXX-YYYYYYYYY-Z.err~ containing more
+details (e.g. tracebacks):
+#+begin_src bash
+  less logs/cluster_triggers_by_snr_00000-245431516-0.err
+
+  Traceback (most recent call last):
+  ...
+#+end_src
+
+[fn:2] https://github.com/MarcvdSluys/MyTerminalConfig/blob/master/bin/dagman-out-list-errors
