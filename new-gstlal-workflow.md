@@ -1,28 +1,28 @@
-- [Choose a singularity image/container for GstLAL](#org9189094)
-    - [Use a reference image/container](#orga4ed54f)
-    - [Set up a singularity image/container for GstLAL development](#orgb4a2e8c)
-  - [Set up the workflow/DAG](#org84be276)
-    - [Create a dir and download files](#org68ba1c4)
-    - [Install the site-specific profiles](#org0531ad4)
-    - [Edit config.yml](#org2c84ce0)
-    - [Create the workflow/DAG Makefile](#org839fcd7)
-    - [Set up a proxy if accessing non-public (GWOSC) data](#org853b846)
-    - [Build the workflow/DAG file for submission](#orgbca0259)
-      - [Possible issues](#org8752630)
-  - [Launch the workflow/DAG](#org1c20488)
-    - [Possible issues](#org62d3ffb)
-  - [Generate the summary page](#orgf0deda6)
-  - [Resuming work in a new shell](#org36093ed)
-  - [Submitting a rescue dag](#org134b72c)
-  - [Diagnosing and handling issues](#orgd185eae)
-    - [Final nodes status](#orge30864f)
-    - [List of errors](#org0b29e30)
+- [Choose a singularity image/container for GstLAL](#org62ea097)
+    - [Use a reference image/container](#org397da80)
+    - [Set up a singularity image/container for GstLAL development](#orgc9e68ac)
+  - [Set up the workflow/DAG](#org5829d31)
+    - [Create a dir and download files](#orgcfe381b)
+    - [Install the site-specific profiles](#org84589e0)
+    - [Edit config.yml](#orgc79e67f)
+    - [Create the workflow/DAG Makefile](#org13cc5ad)
+    - [Set up a proxy if accessing non-public (GWOSC) data](#org8269cbb)
+    - [Build the workflow/DAG file for submission](#orgf83465f)
+      - [Possible issues](#orgc2a537c)
+  - [Launch the workflow/DAG](#orge1208be)
+    - [Possible issues](#org4414035)
+  - [Generate the summary page](#orgd88a9c1)
+  - [Resuming work in a new shell](#org210ad31)
+  - [Submitting a rescue dag](#orgb84de52)
+  - [Diagnosing and handling issues](#org74dfc31)
+    - [Final nodes status](#org77219f7)
+    - [List of errors](#orgc31fa45)
 
 -   <span class="timestamp-wrapper"><span class="timestamp">[2021-11-23 Tue]</span></span>
 -   <https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html>
 
 
-<a id="org9189094"></a>
+<a id="org62ea097"></a>
 
 # Choose a singularity image/container for GstLAL
 
@@ -37,7 +37,7 @@
 -   You will have to choose between a **reference** (default, already setup) container and a **development** container.
 
 
-<a id="orga4ed54f"></a>
+<a id="org397da80"></a>
 
 ## Use a reference image/container
 
@@ -47,7 +47,7 @@ MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Pat
 ```
 
 
-<a id="orgb4a2e8c"></a>
+<a id="orgc9e68ac"></a>
 
 ## Set up a singularity image/container for GstLAL development
 
@@ -65,21 +65,20 @@ MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Pat
     ```
 
 
-<a id="org84be276"></a>
+<a id="org5829d31"></a>
 
 # Set up the workflow/DAG
 
 <https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html>
 
 
-<a id="org68ba1c4"></a>
+<a id="orgcfe381b"></a>
 
 ## Create a dir and download files
 
 Download a default config file, mass model and template bank:
 
 ```bash
-# cd ..  # Get out of the gstlal-build dir
 mkdir run-DAG-01 && cd run-DAG-01
 
 curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/config.yml
@@ -88,7 +87,7 @@ curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/b
 ```
 
 
-<a id="org0531ad4"></a>
+<a id="org84589e0"></a>
 
 ## Install the site-specific profiles
 
@@ -101,7 +100,7 @@ curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/b
 -   This installs (and lists) `*.yml` files in `~/.config/gstlal/`.
 
 
-<a id="org2c84ce0"></a>
+<a id="orgc79e67f"></a>
 
 ## Edit config.yml
 
@@ -161,7 +160,7 @@ directives:
 See <https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html#analysis-configuration> for more details on the configuration file.
 
 
-<a id="org839fcd7"></a>
+<a id="org13cc5ad"></a>
 
 ## Create the workflow/DAG Makefile
 
@@ -173,7 +172,7 @@ singularity exec $MYIMAGE gstlal_inspiral_workflow init -c config.yml
 This creates a file called `Makefile`
 
 
-<a id="org853b846"></a>
+<a id="org8269cbb"></a>
 
 ## Set up a proxy if accessing non-public (GWOSC) data
 
@@ -194,7 +193,7 @@ source:
 ```
 
 
-<a id="orgbca0259"></a>
+<a id="orgf83465f"></a>
 
 ## Build the workflow/DAG file for submission
 
@@ -209,7 +208,7 @@ singularity exec -B $TMPDIR $MYIMAGE make dag
 -   Note: `$TMPDIR` is set when you login.
 
 
-<a id="org8752630"></a>
+<a id="orgc2a537c"></a>
 
 ### Possible issues
 
@@ -218,7 +217,7 @@ singularity exec -B $TMPDIR $MYIMAGE make dag
         -   goes away after trying a few times
 
 
-<a id="org1c20488"></a>
+<a id="orge1208be"></a>
 
 # Launch the workflow/DAG
 
@@ -234,7 +233,7 @@ condor_q     # Monitor your DAG
 -   typical run time is in the order of hours, depending on your settings and cluster load.
 
 
-<a id="org62d3ffb"></a>
+<a id="org4414035"></a>
 
 ## Possible issues
 
@@ -248,7 +247,7 @@ condor_q     # Monitor your DAG
     -   did you set up your proxy correctly?
 
 
-<a id="orgf0deda6"></a>
+<a id="orgd88a9c1"></a>
 
 # Generate the summary page
 
@@ -260,7 +259,7 @@ make summary
 -   The results from ldas Caltech will show up in <https://ldas-jobs.ligo.caltech.edu/~albert.einstein/>
 
 
-<a id="org36093ed"></a>
+<a id="org210ad31"></a>
 
 # Resuming work in a new shell
 
@@ -288,7 +287,7 @@ If you log in in a new shell, the environment variables you had set will be gone
         ```
 
 
-<a id="org134b72c"></a>
+<a id="orgb84de52"></a>
 
 # Submitting a rescue dag
 
@@ -298,14 +297,14 @@ If you log in in a new shell, the environment variables you had set will be gone
 -   Q: is this the correct way? Is this equivalent to redoing `make launch`?
 
 
-<a id="orgd185eae"></a>
+<a id="org74dfc31"></a>
 
 # Diagnosing and handling issues
 
 -   The file `<name>_dag.dag.dagman.out` contains output of your job.
 
 
-<a id="orge30864f"></a>
+<a id="org77219f7"></a>
 
 ## Final nodes status
 
@@ -322,10 +321,10 @@ full_inspiral_dag.dag.dagman.out:
 12/01/21 14:09:45 0 job proc(s) currently held
 ```
 
-In this case, 20 nodes failed
+In this case, 20 nodes failed.
 
 
-<a id="org0b29e30"></a>
+<a id="orgc31fa45"></a>
 
 ## List of errors
 
