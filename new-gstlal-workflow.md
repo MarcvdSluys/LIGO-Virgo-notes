@@ -1,28 +1,28 @@
-- [Choose a singularity image/container for GstLAL](#org62ea097)
-    - [Use a reference image/container](#org397da80)
-    - [Set up a singularity image/container for GstLAL development](#orgc9e68ac)
-  - [Set up the workflow/DAG](#org5829d31)
-    - [Create a dir and download files](#orgcfe381b)
-    - [Install the site-specific profiles](#org84589e0)
-    - [Edit config.yml](#orgc79e67f)
-    - [Create the workflow/DAG Makefile](#org13cc5ad)
-    - [Set up a proxy if accessing non-public (GWOSC) data](#org8269cbb)
-    - [Build the workflow/DAG file for submission](#orgf83465f)
-      - [Possible issues](#orgc2a537c)
-  - [Launch the workflow/DAG](#orge1208be)
-    - [Possible issues](#org4414035)
-  - [Generate the summary page](#orgd88a9c1)
-  - [Resuming work in a new shell](#org210ad31)
-  - [Submitting a rescue dag](#orgb84de52)
-  - [Diagnosing and handling issues](#org74dfc31)
-    - [Final nodes status](#org77219f7)
-    - [List of errors](#orgc31fa45)
+- [Choose a singularity image/container for GstLAL](#org268471d)
+    - [Use a reference image/container](#org276902e)
+    - [Set up a singularity image/container for GstLAL development](#orgda4d8ba)
+  - [Set up the workflow/DAG](#orgbe5577b)
+    - [Create a dir and download files](#org2b010e1)
+    - [Install the site-specific profiles](#orge1754c3)
+    - [Edit config.yml](#orgccf1a1d)
+    - [Create the workflow/DAG Makefile](#org2afac9b)
+    - [Set up a proxy if accessing non-public (GWOSC) data](#org7c446aa)
+    - [Build the workflow/DAG file for submission](#org6da22ea)
+      - [Possible issues](#org9c97aab)
+  - [Launch the workflow/DAG](#org8e6f25a)
+    - [Possible issues](#orgdca320f)
+  - [Generate the summary page](#org926ae73)
+  - [Resuming work in a new shell or after a break](#orgb01c546)
+  - [Submitting a rescue dag](#orgc96a27c)
+  - [Diagnosing and handling issues](#org59ddc56)
+    - [Final nodes status](#orgabf87f1)
+    - [List of errors](#org836ce79)
 
 -   <span class="timestamp-wrapper"><span class="timestamp">[2021-11-23 Tue]</span></span>
 -   <https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html>
 
 
-<a id="org62ea097"></a>
+<a id="org268471d"></a>
 
 # Choose a singularity image/container for GstLAL
 
@@ -37,7 +37,7 @@
 -   You will have to choose between a **reference** (default, already setup) container and a **development** container.
 
 
-<a id="org397da80"></a>
+<a id="org276902e"></a>
 
 ## Use a reference image/container
 
@@ -47,7 +47,7 @@ MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Pat
 ```
 
 
-<a id="orgc9e68ac"></a>
+<a id="orgda4d8ba"></a>
 
 ## Set up a singularity image/container for GstLAL development
 
@@ -65,14 +65,14 @@ MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Pat
     ```
 
 
-<a id="org5829d31"></a>
+<a id="orgbe5577b"></a>
 
 # Set up the workflow/DAG
 
 <https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html>
 
 
-<a id="orgcfe381b"></a>
+<a id="org2b010e1"></a>
 
 ## Create a dir and download files
 
@@ -87,7 +87,7 @@ curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/b
 ```
 
 
-<a id="org84589e0"></a>
+<a id="orge1754c3"></a>
 
 ## Install the site-specific profiles
 
@@ -100,7 +100,7 @@ curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/b
 -   This installs (and lists) `*.yml` files in `~/.config/gstlal/`.
 
 
-<a id="orgc79e67f"></a>
+<a id="orgccf1a1d"></a>
 
 ## Edit config.yml
 
@@ -160,7 +160,7 @@ directives:
 See <https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html#analysis-configuration> for more details on the configuration file.
 
 
-<a id="org13cc5ad"></a>
+<a id="org2afac9b"></a>
 
 ## Create the workflow/DAG Makefile
 
@@ -172,7 +172,7 @@ singularity exec $MYIMAGE gstlal_inspiral_workflow init -c config.yml
 This creates a file called `Makefile`
 
 
-<a id="org8269cbb"></a>
+<a id="org7c446aa"></a>
 
 ## Set up a proxy if accessing non-public (GWOSC) data
 
@@ -193,7 +193,7 @@ source:
 ```
 
 
-<a id="orgf83465f"></a>
+<a id="org6da22ea"></a>
 
 ## Build the workflow/DAG file for submission
 
@@ -208,7 +208,7 @@ singularity exec -B $TMPDIR $MYIMAGE make dag
 -   Note: `$TMPDIR` is set when you login.
 
 
-<a id="orgc2a537c"></a>
+<a id="org9c97aab"></a>
 
 ### Possible issues
 
@@ -217,7 +217,7 @@ singularity exec -B $TMPDIR $MYIMAGE make dag
         -   goes away after trying a few times
 
 
-<a id="orge1208be"></a>
+<a id="org8e6f25a"></a>
 
 # Launch the workflow/DAG
 
@@ -233,7 +233,7 @@ condor_q     # Monitor your DAG
 -   typical run time is in the order of hours, depending on your settings and cluster load.
 
 
-<a id="org4414035"></a>
+<a id="orgdca320f"></a>
 
 ## Possible issues
 
@@ -247,7 +247,7 @@ condor_q     # Monitor your DAG
     -   did you set up your proxy correctly?
 
 
-<a id="orgd88a9c1"></a>
+<a id="org926ae73"></a>
 
 # Generate the summary page
 
@@ -259,35 +259,33 @@ make summary
 -   The results from ldas Caltech will show up in <https://ldas-jobs.ligo.caltech.edu/~albert.einstein/>
 
 
-<a id="org210ad31"></a>
+<a id="orgb01c546"></a>
 
-# Resuming work in a new shell
+# Resuming work in a new shell or after a break
 
-If you log in in a new shell, the environment variables you had set will be gone. Hence, you will have resource one of the env files.
+After you resume work, you may have to
 
-1.  before (re)building GstLAL:
+1.  Redefine `$MYIMAGE`
     
     ```bash
-    cd gstlal-deps
-    source deps_env.sh
-    cd -
+    MYIMAGE="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Default GstLAL master
+    MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Patrick Godwin's version
     ```
-2.  before (re)creating a (new) DAG:
-    1.  Resource the GstLAL environment:
-        
-        ```bash
-        cd gstlal-build
-        source env.sh
-        cd -
-        ```
-    2.  Resetup your proxy
-        
-        ```bash
-        X509_USER_PROXY=/path/to/x509_proxy ligo-proxy-init -p albert.einstein
-        ```
+    
+    or
+    
+    ```bash
+    cd /path/to/gstlal-dev-container
+    MYIMAGE="$PWD"
+    ```
+2.  Resetup your proxy
+    
+    ```bash
+    X509_USER_PROXY=/path/to/x509_proxy ligo-proxy-init -p albert.einstein
+    ```
 
 
-<a id="orgb84de52"></a>
+<a id="orgc96a27c"></a>
 
 # Submitting a rescue dag
 
@@ -297,14 +295,14 @@ If you log in in a new shell, the environment variables you had set will be gone
 -   Q: is this the correct way? Is this equivalent to redoing `make launch`?
 
 
-<a id="org74dfc31"></a>
+<a id="org59ddc56"></a>
 
 # Diagnosing and handling issues
 
 -   The file `<name>_dag.dag.dagman.out` contains output of your job.
 
 
-<a id="org77219f7"></a>
+<a id="orgabf87f1"></a>
 
 ## Final nodes status
 
@@ -324,7 +322,7 @@ full_inspiral_dag.dag.dagman.out:
 In this case, 20 nodes failed.
 
 
-<a id="orgc31fa45"></a>
+<a id="org836ce79"></a>
 
 ## List of errors
 
