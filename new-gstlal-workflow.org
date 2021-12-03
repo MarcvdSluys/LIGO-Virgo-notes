@@ -1,64 +1,39 @@
-# Created 2021-12-02 Thu 13:51
+# Created 2021-12-03 Fri 12:14
 #+title: New GstLAL workflow
 #+author: Marc van der Sluys
 - [2021-11-23 Tue]
 - https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html
 
-* Set up and enter singularity container
+* Choose a singularity image/container for GstLAL
+- A Singularity image or container contains a GNU/Linux system with (hopefully) the environment we need.  The
+  cluster environment is replaced with that of the container, except for e.g. your home directory.
+- Most important commands:
+  #+begin_src bash
+    singularity run <image>  # Replace the cluster environment with that of the container
+    singularity exec <image> <command>  # Run <command> in the <image> environment, then return
+  #+end_src
+- See https://sylabs.io/guides/latest/user-guide/ for more details.
+- You will have to choose between a *reference* (default, already setup) container and a *development*
+  container.
+
+** Use a reference image/container
+#+begin_src bash
+  MYIMAGE="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Default GstLAL master
+  MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Patrick Godwin's version
+#+end_src
+
+** Set up a singularity image/container for GstLAL development
 - https://lscsoft.docs.ligo.org/gstlal/installation.html#singularity-container
   #+begin_src bash
-    # Build writable container in subdir gstlal-dev-container/:
+    # Pull a writable development container with GstLAL  installed in subdir gstlal-dev-container/:
     singularity build --sandbox --fix-perms gstlal-dev-container docker://containers.ligo.org/lscsoft/gstlal:master
     mkdir gstlal-dev-container/hdfs gstlal-dev-container/archive gstlal-dev-container/cvmfs  # They may be needed later
 
-    # Enter container (needed?):
-    singularity run --writable gstlal-dev-container
+    MYIMAGE="$PWD/gstlal-dev-container"
+
+    # Enter container (not needed?, test wether it works, exit with exit):
+    # singularity run --writable $MYIMAGE  # gstlal-dev-container
   #+end_src
-
-* Download and build the GstLAL dependencies
-#+begin_src bash
-  mkdir gstlal-deps && cd gstlal-deps
-  wget https://git.ligo.org/lscsoft/gstlal/-/raw/master/gstlal-inspiral/share/post_O3/optimized/Makefile.ligosoftware_gcc_deps -O Makefile  # Download Makefile
-  less Makefile  # Verify the make instructions, `q` to exit
-
-  make deps_env.sh  # make deps_env.sh
-  ls -l  # check the result
-  source deps_env.sh  # source ('run') the script
-  time make 1> make.out 2> make.err &  # build the dependencies, ~16 min
-  tail -f make.out  # Follow installation (Ctrl-C to kill)
-  tail -f make.err  # Follow progress bit more relaxedly
-#+end_src
-
-* Downloading and building GstLAL
-Get GstLAL:
-#+begin_src bash
-  cd ..  # Get out of the gstlal-deps dir
-  git clone git@git.ligo.org:lscsoft/gstlal.git    # git/ssh - need key setup?  ~30s  
-  # git clone https://git.ligo.org/lscsoft/gstlal.git  # can't push over https?
-#+end_src
-- the ~git/ssh~ version should use your ssh key if properly set up
-- it will ask your passphrase several times, so a key agent is already useful here
-
-Build GstLAL:
-#+begin_src bash
-  mkdir gstlal-build && cd gstlal-build/
-  wget https://git.ligo.org/lscsoft/gstlal/-/raw/master/gstlal-inspiral/share/post_O3/optimized/Makefile.ligosoftware_gcc_gstlal -O Makefile  # Download Makefile
-  less Makefile  # Verify the make instructions
-#+end_src
-Edit ~Makefile~:
-1. set the ~DEPS_DIR:=~ variable to the directory in which you built the dependencies,
-   e.g. ~../gstlal-deps~
-2. edit the ~GSTLAL_GIT_BRANCH~ variable if you want a different branch than ~master~
-
-Build GstLAL:
-#+begin_src bash
-  make env.sh
-  source env.sh
-  time make -f Makefile 1> make.out 2> make.err &  # ~25 min
-#+end_src
-- this downloads and builds:
-  1. lalsuite: lal, lalframe, lalmetaio, lalsimulation, lalburst, lalinspiral, lalpulsar, lalinference, lalapps
-  2. gstlal: gstlal, gstlal-ugly, gstlal-burst, gstlal-calibration, gstlal-inspiral
 
 * Set up the workflow/DAG
 https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html
@@ -66,7 +41,7 @@ https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html
 ** Create a dir and download files
 Download a default config file, mass model and template bank:
 #+begin_src bash
-  cd ..  # Get out of the gstlal-build dir
+  # cd ..  # Get out of the gstlal-build dir
   mkdir run-DAG-01 && cd run-DAG-01
 
   curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/config.yml
@@ -75,14 +50,12 @@ Download a default config file, mass model and template bank:
 #+end_src
 
 ** Install the site-specific profiles
-- Needed only *once* per user/cluster
-
-#+begin_src bash
-  gstlal_grid_profile install
-  # singularity exec <image> gstlal_grid_profile install  # Same effect
-  gstlal_grid_profile list  # List installed profiles
-#+end_src
-This will install ~*.yml~ files in =~/.config/gstlal/=.
+- Needed only *once* per user/cluster:
+  #+begin_src bash
+    singularity exec $MYIMAGE gstlal_grid_profile install  # Install profiles
+    singularity exec $MYIMAGE gstlal_grid_profile list     # List installed profiles
+  #+end_src
+- This installs (and lists) ~*.yml~ files in =~/.config/gstlal/=.
 
 ** Edit config.yml
 Set e.g.:
@@ -108,7 +81,8 @@ If your username doesn't match your LIGO albert.einstein name, you need to provi
     accounting-group-user: albert.einstein
 #+end_src
 
-You may have to add or update the path to the singularity image:
+You may have to add or update the path to the singularity image.  Make sure that this is the same as stored in
+~$MYIMAGE~.
 #+begin_src yaml
   condor:
     singularity-image: /cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master            
@@ -120,10 +94,18 @@ If running on an LDAS cluster rather than OSG, replace the profile:
     profile: ldas
 #+end_src
 
-Do you need to change the data server?
+Do you need to change the data server?  E.g.:
 #+begin_src yaml
   source:
     data-find-server: ldr.ldas.cit:80
+#+end_src
+
+Reduced-order-model (ROM) waveforms present a faster version of a waveform model by storing a large number of
+precomputed waveforms and performing smart interpolation between them.  The ROM files store these waveforms.
+You can think of these as the weights of a rudimental machine-learning model.
+#+begin_src yaml
+  directives:
+    environment: '"LAL_DATA_PATH=/home/cbc/ROM_data SINGULARITY_BIND=/home/cbc/ROM_data"'
 #+end_src
 
 See https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html#analysis-configuration for more details on the
@@ -131,9 +113,8 @@ See https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html#analysis-configuratio
 
 ** Create the workflow/DAG Makefile
 #+begin_src bash
-  gstlal_inspiral_workflow init -c config.yml
-  # singularity exec <image> gstlal_inspiral_workflow init -c config.yml  # Doesn't work
-  # singularity exec <image> gstlal_inspiral_workflow init -c config.yml -w injection  # Injection only
+  singularity exec $MYIMAGE gstlal_inspiral_workflow init -c config.yml
+  # singularity exec $MYIMAGE gstlal_inspiral_workflow init -c config.yml -w injection  # Injection only
 #+end_src
 This creates a file called ~Makefile~
 
@@ -143,8 +124,9 @@ This creates a file called ~Makefile~
 #+end_src
 - This asks for your LIGO password and creates a file called ~x509_proxy~ at the indicated location with
   certificates and a private key.
-- Note that this must be run outside Singularity.
+- Note that this must be run *outside* the Singularity container.
 - The proxy is valid for a few hours *(CHECK: correct?)*
+- Note that you can use the ~proxy-x509-create~ alias to create ~x509_proxy~ in the current directory. [fn:1]
 
 Edit ~config.yml~ and set the correct path to the proxy file:
 #+begin_src yaml
@@ -152,20 +134,22 @@ Edit ~config.yml~ and set the correct path to the proxy file:
     x509-proxy: /path/to/x509_proxy
 #+end_src
 
+[fn:1] https://github.com/MarcvdSluys/MyTerminalConfig/blob/master/bashrc_ligo
+
 ** Build the workflow/DAG file for submission
 We need to select the whitening type using the environment variable ~GSTLAL_FIR_WHITEN~.  The value 0 sets the
 traditional acausal whitening filter, 1 enables causal whitening.
 
 #+begin_src bash
   export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1
-  make dag
-  # singularity exec -B $TMPDIR <image> make dag
+  singularity exec -B $TMPDIR $MYIMAGE make dag
 #+end_src
 - This creates a list of files and subdirectories, amongst which Condor submission scripts (~*.sub~) and
   DAGMan files (~*.dag~).
+- Note: ~$TMPDIR~ is set when you login.
 
 *** Possible issues
-1. When running ~make dag~  (w/o singularity):
+1. When running ~make dag~  (w/o singularity only?):
    - ImportError: No module named _lal
      - goes away after trying a few times
 
@@ -174,6 +158,7 @@ traditional acausal whitening filter, 1 enables causal whitening.
   make launch  # Submit your DAG
   condor_q     # Monitor your DAG
 #+end_src
+- Note: run *outside* the Singularity image
 - ~make launch~ runs ~condor_submit_dag~ and should report something like ~1 job(s) submitted to cluster xxx~
 - ~condor_q~ should show a few dozen to several hundred jobs, probably idle and perhaps running.
 - there should be a file called ~*.dag.dagman.out~ with status output.  You can follow what's going on with
@@ -216,11 +201,17 @@ resource one of the env files.
         X509_USER_PROXY=/path/to/x509_proxy ligo-proxy-init -p albert.einstein
       #+end_src
 
+* Submitting a rescue dag
+- the file ~file.dag.dagman.out~ or similar will show whether any of the nodes failed (near the end)
+- if this is the case, a ~file.dag.rescueXXX~ file will be created (where ~XXX~ is ~001~, ~002~, etc.)
+- the DAG can be resubmitted using the original DAG file: ~condor_submit_dag file.dag~
+- Q: is this the correct way?  Is this equivalent to redoing ~make launch~?
+
 * Diagnosing and handling issues
 - The file ~<name>_dag.dag.dagman.out~ contains output of your job.
 
 ** Final nodes status
-You can use e.g. dagman-out-final-status [fn:1] to grep the final status of the nodes:
+You can use e.g. dagman-out-final-status [fn:2] to grep the final status of the nodes:
 #+begin_src bash
   $ dagman-out-final-status
 
@@ -233,10 +224,10 @@ You can use e.g. dagman-out-final-status [fn:1] to grep the final status of the 
 #+end_src
 In this case, 20 nodes failed
 
-[fn:1] https://github.com/MarcvdSluys/MyTerminalConfig/blob/master/bin/dagman-out-final-status
+[fn:2] https://github.com/MarcvdSluys/MyTerminalConfig/blob/master/bin/dagman-out-final-status
 
 ** List of errors
-A list of errors, if any, can be shown using e.g. dagman-out-list-errors [fn:2]:
+A list of errors, if any, can be shown using e.g. dagman-out-list-errors [fn:3]:
 #+begin_src bash
   $ dagman-out-list-errors
 
@@ -265,4 +256,4 @@ details (e.g. tracebacks):
   ...
 #+end_src
 
-[fn:2] https://github.com/MarcvdSluys/MyTerminalConfig/blob/master/bin/dagman-out-list-errors
+[fn:3] https://github.com/MarcvdSluys/MyTerminalConfig/blob/master/bin/dagman-out-list-errors
