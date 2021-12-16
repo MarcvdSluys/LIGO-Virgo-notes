@@ -32,6 +32,11 @@ Emacs settings are usually in =~/.emacs.d/init.el= (or =~/.emacs=).  My settings
 out (~;;~) what doesn't work.  It is likely that not all will work at the first go, because some options
 require additional software (e.g. emacs-packages, LaTeX) and I'm too lazy to figure this out.
 
+Alternatively, you can rename this file e.g. ~orgmode.el~ and source it from your ~init.el~ using
+#+begin_src elisp
+  (load "orgmode")
+#+end_src
+
 * Links to more info
 1. Page for absolute beginners: https://orgmode.org/worg/org-tutorials/org4beginners.html
 2. Tutorials, with at the top a series of videos where you can see the magic happen:
