@@ -1,23 +1,23 @@
-- [Condor structure](#org15d4884)
-    - [Possible issues](#orgc20d153)
-    - [What are my jobs up to?](#orgdfe62ef)
-    - [Why are my jobs idle?](#org14c131c)
-    - [Why are my jobs still running?](#org73d0d56)
-    - [Why are my jobs held?](#orgc1ccbcf)
-    - [My jobs completed, but the output is wrong](#org2f66441)
-    - [Troubleshooting DAGs](#org2024c34)
+- [Condor structure](#org2222d5c)
+    - [Possible issues](#org78f7355)
+    - [What are my jobs up to?](#org4196921)
+    - [Why are my jobs idle?](#orge40661b)
+    - [Why are my jobs still running?](#org27bd6bc)
+    - [Why are my jobs held?](#orgcfaa653)
+    - [My jobs completed, but the output is wrong](#orgfc1fa1c)
+    - [Troubleshooting DAGs](#orga322387)
 
 -   Source: OSG user school 2017: <https://opensciencegrid.org/user-school-2017/materials/day2/files/osgus17-day2-part4-troubleshooting.pdf>
 
 
-<a id="org15d4884"></a>
+<a id="org2222d5c"></a>
 
 # Condor structure
 
-![img](gw-clusters-HTCondor-structure.png)
+![img](Figs/gw-clusters-HTCondor-structure.png)
 
 
-<a id="orgc20d153"></a>
+<a id="org78f7355"></a>
 
 # Possible issues
 
@@ -30,7 +30,7 @@
 4.  Note: Errors appears in `*dagman.out` files instead of STDOUT or STDERR
 
 
-<a id="orgdfe62ef"></a>
+<a id="org4196921"></a>
 
 # What are my jobs up to?
 
@@ -49,7 +49,7 @@ Job status codes:
 -   **S:** `SUSPENDED`
 
 
-<a id="org14c131c"></a>
+<a id="orge40661b"></a>
 
 # Why are my jobs idle?
 
@@ -60,7 +60,7 @@ condor_q -better 29486
 -   shows desired and (un)matched requirements
 
 
-<a id="org73d0d56"></a>
+<a id="org27bd6bc"></a>
 
 # Why are my jobs still running?
 
@@ -68,7 +68,7 @@ condor_q -better 29486
     -   Non-OSG jobs only!
 
 
-<a id="orgc1ccbcf"></a>
+<a id="orgcfaa653"></a>
 
 # Why are my jobs held?
 
@@ -113,10 +113,10 @@ condor_q -held
             2.  add debugging information to your code
         -   Note:
         
-        ![img](gw-clusters-HTCondor-shadow-starter.png)
+        ![img](Figs/gw-clusters-HTCondor-shadow-starter.png)
 
 
-<a id="org2f66441"></a>
+<a id="orgfc1fa1c"></a>
 
 # My jobs completed, but the output is wrong
 
@@ -127,7 +127,7 @@ condor_q -held
     2.  If it fails, there is an issue with your code or your invocation!
 
 
-<a id="org2024c34"></a>
+<a id="orga322387"></a>
 
 # Troubleshooting DAGs
 
