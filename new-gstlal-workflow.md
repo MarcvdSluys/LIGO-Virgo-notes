@@ -1,31 +1,31 @@
-- [Choose a singularity image/container for GstLAL](#orgea8497d)
-    - [Use a reference image/container](#orga6d888a)
-    - [Set up a singularity image/container for GstLAL development](#orgdec5e69)
-  - [Set up the workflow/DAG](#org10b640a)
-    - [Create a dir and download files](#orgbee238b)
-    - [Install the site-specific profiles](#orgae3616a)
-    - [Edit `config.yml`](#org85587c8)
-    - [Create the workflow/DAG Makefile](#org117c94e)
-    - [Set up a proxy if accessing non-public (GWOSC) data](#orgb1c1af2)
-    - [Build the workflow/DAG file for submission](#org4535776)
-      - [Possible issues](#org5a22fde)
-  - [Launch the workflow/DAG](#org5c4b49a)
-    - [Possible issues](#org904eb0e)
-  - [Generate the summary page](#org8ff77b0)
-  - [Resuming work in a new shell or after a break](#org44a6d81)
-  - [Diagnosing and handling issues](#org0bcc19d)
-    - [Final nodes status](#org979115e)
-    - [List of errors](#org2a2862d)
-  - [Submitting a rescue dag](#org7ca6da8)
-  - [A very short summary](#org7dca8dd)
-    - [Do only once](#org80ece66)
-    - [Workflow](#org7e67825)
+- [Choose a singularity image/container for GstLAL](#org0b7c1e8)
+    - [Use a reference image/container](#org3b3c79b)
+    - [Set up a singularity image/container for GstLAL development](#org3fa1fdd)
+  - [Set up the workflow/DAG](#org88bf27b)
+    - [Create a dir and download files](#orga18044f)
+    - [Install the site-specific profiles](#org9b9e72e)
+    - [Edit `config.yml`](#orgcb5ec82)
+    - [Create the workflow/DAG Makefile](#orga8d91ce)
+    - [Set up a proxy if accessing non-public (GWOSC) data](#orgee9b5c8)
+    - [Build the workflow/DAG file for submission](#org2ec5f34)
+      - [Possible issues](#orgb2d4c4d)
+  - [Launch the workflow/DAG](#orgff217dd)
+    - [Possible issues](#orgc708c12)
+  - [Generate the summary page](#orgd2cb0e9)
+  - [Resuming work in a new shell or after a break](#org4a2bdd0)
+  - [Diagnosing and handling issues](#orgbfffe9d)
+    - [Final nodes status](#org75a54aa)
+    - [List of errors](#org0922a80)
+  - [Submitting a rescue dag](#org02fb037)
+  - [A very short summary](#orgba2d13c)
+    - [Setup once](#org22a3541)
+    - [Workflow](#org1c0b1a7)
 
 -   <span class="timestamp-wrapper"><span class="timestamp">[2021-11-23 Tue]</span></span>
 -   <https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html>
 
 
-<a id="orgea8497d"></a>
+<a id="org0b7c1e8"></a>
 
 # Choose a singularity image/container for GstLAL
 
@@ -40,17 +40,17 @@
 -   You will have to choose between a **reference** (default, already setup) container and a **development** container.
 
 
-<a id="orga6d888a"></a>
+<a id="org3b3c79b"></a>
 
 ## Use a reference image/container
 
 ```bash
-MYIMAGE="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Default GstLAL master
-MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Patrick Godwin's version
+GSTLAL_IMG="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Default GstLAL master
+GSTLAL_IMG="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Patrick Godwin's version
 ```
 
 
-<a id="orgdec5e69"></a>
+<a id="org3fa1fdd"></a>
 
 ## Set up a singularity image/container for GstLAL development
 
@@ -61,21 +61,21 @@ MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Pat
     singularity build --sandbox --fix-perms gstlal-dev-container docker://containers.ligo.org/lscsoft/gstlal:master
     mkdir gstlal-dev-container/hdfs gstlal-dev-container/archive gstlal-dev-container/cvmfs  # They may be needed later
     
-    MYIMAGE="$PWD/gstlal-dev-container"
+    GSTLAL_IMG="$PWD/gstlal-dev-container"
     
     # Enter container (not needed?, test wether it works, exit with exit):
-    # singularity run --writable $MYIMAGE  # gstlal-dev-container
+    # singularity run --writable $GSTLAL_IMG  # gstlal-dev-container
     ```
 
 
-<a id="org10b640a"></a>
+<a id="org88bf27b"></a>
 
 # Set up the workflow/DAG
 
 <https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html>
 
 
-<a id="orgbee238b"></a>
+<a id="orga18044f"></a>
 
 ## Create a dir and download files
 
@@ -90,20 +90,20 @@ curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/b
 ```
 
 
-<a id="orgae3616a"></a>
+<a id="org9b9e72e"></a>
 
 ## Install the site-specific profiles
 
 -   Needed only **once** per user/cluster:
     
     ```bash
-    singularity exec $MYIMAGE gstlal_grid_profile install  # Install profiles
-    singularity exec $MYIMAGE gstlal_grid_profile list     # List installed profiles
+    singularity exec $GSTLAL_IMG gstlal_grid_profile install  # Install profiles
+    singularity exec $GSTLAL_IMG gstlal_grid_profile list     # List installed profiles
     ```
 -   This installs (and lists) `*.yml` files in `~/.config/gstlal/`.
 
 
-<a id="org85587c8"></a>
+<a id="orgcb5ec82"></a>
 
 ## Edit `config.yml`
 
@@ -132,7 +132,7 @@ condor:
   accounting-group-user: albert.einstein
 ```
 
-You may have to add or update the path to the singularity image. Make sure that this is the same as stored in `$MYIMAGE`.
+You may have to add or update the path to the singularity image. Make sure that this is the same as stored in `$GSTLAL_IMG`.
 
 ```yaml
 condor:
@@ -160,22 +160,25 @@ directives:
   environment: '"LAL_DATA_PATH=/home/cbc/ROM_data SINGULARITY_BIND=/home/cbc/ROM_data"'
 ```
 
+-   doesn't seem to make it to the `*.sub` files
+    -   overwritten by `environment` from profile (e.g. `~/.config/gstlal/ldas.yml`)?
+
 See <https://lscsoft.docs.ligo.org/gstlal/cbc_analysis.html#analysis-configuration> for more details on the configuration file.
 
 
-<a id="org117c94e"></a>
+<a id="orga8d91ce"></a>
 
 ## Create the workflow/DAG Makefile
 
 ```bash
-singularity exec $MYIMAGE gstlal_inspiral_workflow init -c config.yml
-# singularity exec $MYIMAGE gstlal_inspiral_workflow init -c config.yml -w injection  # Injection only
+singularity exec $GSTLAL_IMG gstlal_inspiral_workflow init -c config.yml
+# singularity exec $GSTLAL_IMG gstlal_inspiral_workflow init -c config.yml -w injection  # Injection only
 ```
 
 This creates a file called `Makefile`
 
 
-<a id="orgb1c1af2"></a>
+<a id="orgee9b5c8"></a>
 
 ## Set up a proxy if accessing non-public (GWOSC) data
 
@@ -196,7 +199,7 @@ source:
 ```
 
 
-<a id="org4535776"></a>
+<a id="org2ec5f34"></a>
 
 ## Build the workflow/DAG file for submission
 
@@ -204,14 +207,14 @@ We need to select the whitening type using the environment variable `GSTLAL_FIR_
 
 ```bash
 export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1
-singularity exec -B $TMPDIR $MYIMAGE make dag
+singularity exec -B $TMPDIR $GSTLAL_IMG make dag
 ```
 
 -   This creates a list of files and subdirectories, amongst which Condor submission scripts (`*.sub`) and DAGMan files (`*.dag`).
 -   Note: `$TMPDIR` is set when you login.
 
 
-<a id="org5a22fde"></a>
+<a id="orgb2d4c4d"></a>
 
 ### Possible issues
 
@@ -220,7 +223,7 @@ singularity exec -B $TMPDIR $MYIMAGE make dag
         -   goes away after trying a few times
 
 
-<a id="org5c4b49a"></a>
+<a id="orgff217dd"></a>
 
 # Launch the workflow/DAG
 
@@ -237,7 +240,7 @@ tail -f full_inspiral.dag.dagman.out  # Monitor your DAG
 -   typical run time is in the order of hours, depending on your settings and cluster load.
 
 
-<a id="org904eb0e"></a>
+<a id="orgc708c12"></a>
 
 ## Possible issues
 
@@ -251,18 +254,18 @@ tail -f full_inspiral.dag.dagman.out  # Monitor your DAG
     -   did you set up your proxy correctly?
 
 
-<a id="org8ff77b0"></a>
+<a id="orgd2cb0e9"></a>
 
 # Generate the summary page
 
 ```bash
-singularity exec -B $TMPDIR $MYIMAGE make summary
+singularity exec -B $TMPDIR $GSTLAL_IMG make summary
 ```
 
 -   The results from ldas Caltech will show up in <https://ldas-jobs.ligo.caltech.edu/~albert.einstein/>
 
 
-<a id="org44a6d81"></a>
+<a id="org4a2bdd0"></a>
 
 # Resuming work in a new shell or after a break
 
@@ -271,8 +274,8 @@ After you resume work, you may have to
 1.  Redefine environment variables (for a new shell):
     
     ```bash
-    MYIMAGE="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Default GstLAL master
-    # MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Patrick Godwin's version
+    GSTLAL_IMG="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Default GstLAL master
+    # GSTLAL_IMG="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Patrick Godwin's version
     
     export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1
     ```
@@ -281,7 +284,7 @@ After you resume work, you may have to
     
     ```bash
     cd /path/to/gstlal-dev-container
-    MYIMAGE="$PWD"
+    GSTLAL_IMG="$PWD"
     ```
 2.  Resetup your proxy
     
@@ -290,14 +293,14 @@ After you resume work, you may have to
     ```
 
 
-<a id="org0bcc19d"></a>
+<a id="orgbfffe9d"></a>
 
 # Diagnosing and handling issues
 
 -   The file `<name>_dag.dag.dagman.out` contains output of your job.
 
 
-<a id="org979115e"></a>
+<a id="org75a54aa"></a>
 
 ## Final nodes status
 
@@ -317,7 +320,7 @@ full_inspiral_dag.dag.dagman.out:
 In this case, 20 nodes failed.
 
 
-<a id="org2a2862d"></a>
+<a id="org0922a80"></a>
 
 ## List of errors
 
@@ -351,7 +354,7 @@ Traceback (most recent call last):
 ```
 
 
-<a id="org7ca6da8"></a>
+<a id="org02fb037"></a>
 
 # Submitting a rescue dag
 
@@ -361,51 +364,59 @@ Traceback (most recent call last):
 -   Q: is this the correct way? Is this equivalent to redoing `make launch`?
 
 
-<a id="org7dca8dd"></a>
+<a id="orgba2d13c"></a>
 
 # A very short summary
 
 
-<a id="org80ece66"></a>
+<a id="org22a3541"></a>
 
-## Do only once
+## Setup once
 
 ```bash
-singularity exec $MYIMAGE gstlal_grid_profile install  # Install profiles, once per cluster account
+GSTLAL_IMG="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Or one of the alternatives - add to ~/.bashrc ?
+export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1 - add to ~/.bashrc?
+singularity exec $GSTLAL_IMG gstlal_grid_profile install  # Install profiles, once per cluster account
 ```
 
 
-<a id="org7e67825"></a>
+<a id="org1c0b1a7"></a>
 
 ## Workflow
 
 ```bash
-# Choose one:
-MYIMAGE="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Or one of the alternatives
-MYIMAGE="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Patrick Godwin's version - doesn't work?
-cd /path/to/gstlal-dev-container && MYIMAGE="$PWD" && cd -
+# Choose one (set the default in your ~/.bash_profile ?):
+GSTLAL_IMG="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Or one of the alternatives
+GSTLAL_IMG="/home/patrick.godwin/gstlal/offline/osg_small/gstlal-dev-210902"  # Patrick Godwin's version - doesn't work?
+cd /path/to/gstlal-dev-container && GSTLAL_IMG="$PWD" && cd -
 
 mkdir run-dag-01 && cd run-dag-01
 
-curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/config.yml  # Or copy it from somewhere and adapt
+# Get them fresh:
+curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/config.yml
 curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/mass_model/mass_model_small.h5
 curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/bank/gstlal_bank_small.xml.gz
+# Or copy them from elsewhere:
+cd ../run-dag-00  # Previous run
+cp config.yml mass_model_small.h5 gstlal_bank_small.xml.gz $OLDPWD
+cd -
 
 # Edit config.yml
 
-singularity exec $MYIMAGE gstlal_inspiral_workflow init -c config.yml
-proxy-x509-create
+singularity exec $GSTLAL_IMG gstlal_inspiral_workflow init -c config.yml  # Create Makefile
 
-export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1
-singularity exec -B $TMPDIR $MYIMAGE make dag
+proxy-x509-create  # Will ask for your LIGO albert.einstein password
 
-make launch  # Submit your DAG
-condor_q     # Monitor your DAG
-tail -f full_inspiral.dag.dagman.out  # Monitor your DAG
+# export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1 - if not done in your ~/.bashrc
+
+singularity exec -B $TMPDIR $GSTLAL_IMG make dag  # Create the DAG
+
+make launch  &&  watch -n 1 condor_q  # Submit your DAG and monitor it
+tail -f full_inspiral.dag.dagman.out  # Monitor your DAG whilst running
 
 # Wait...
 
-singularity exec -B $TMPDIR $MYIMAGE make summary
+singularity exec -B $TMPDIR $GSTLAL_IMG make summary
 ```
 
 ## Footnotes
