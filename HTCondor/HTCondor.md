@@ -1,24 +1,25 @@
-- [Lingo](#orgc7e7c64)
-  - [Condor submit script](#org84eef01)
-    - [Condor submit-script parameters/commands](#org16cdbb5)
-    - [Python in Condor](#org7a47079)
-  - [Condor DAGMan](#orgbe47a5e)
-  - [Monitor your DAGs/runs/the cluster](#org73ea929)
-  - [Cluster/node/cpu info](#org92ed407)
-  - [OSG/HTCondor troubleshooting](#org5e07d1b)
-    - [Condor structure](#orga9f8810)
-    - [Possible issues](#org3a7a500)
-    - [What are my jobs up to?](#orga443d0f)
-    - [Why are my jobs idle?](#orgb4b338d)
-    - [Why are my jobs still running?](#org5b4808f)
-    - [Why are my jobs held?](#org92d0ac5)
-    - [My jobs completed, but the output is wrong](#org6795aa0)
-    - [Troubleshooting DAGs](#org96d8419)
+- [Lingo](#org429674f)
+  - [Condor submit script](#org42bc396)
+    - [Condor submit-script parameters/commands](#org7e7a2d3)
+    - [Python in Condor](#orgfd8b9cc)
+  - [Condor DAGMan](#org1a2b059)
+    - [Debugging your DAG](#org3645791)
+  - [Monitor your DAGs/runs/the cluster](#orgbea4956)
+  - [Cluster/node/cpu info](#org5e50b0f)
+  - [OSG/HTCondor troubleshooting](#orgded42b2)
+    - [Condor structure](#org26a02a8)
+    - [Possible issues](#orgb80b290)
+    - [What are my jobs up to?](#orgaa78569)
+    - [Why are my jobs idle?](#org433ec21)
+    - [Why are my jobs still running?](#orgb357bfa)
+    - [Why are my jobs held?](#org014b665)
+    - [My jobs completed, but the output is wrong](#org9c7be28)
+    - [Troubleshooting DAGs](#org920243d)
 
 -   <https://htcondor.readthedocs.io/en/latest/users-manual/>
 
 
-<a id="orgc7e7c64"></a>
+<a id="org429674f"></a>
 
 # Lingo
 
@@ -26,7 +27,7 @@
 -   **Starter:** compute node
 
 
-<a id="org84eef01"></a>
+<a id="org42bc396"></a>
 
 # Condor submit script
 
@@ -47,7 +48,7 @@ queue
 -   submission: `condor_submit job.sub`
 
 
-<a id="org16cdbb5"></a>
+<a id="org7e7a2d3"></a>
 
 ## Condor submit-script parameters/commands
 
@@ -88,31 +89,58 @@ queue
 -   **`queue`:** queue command (ends the settings)?
 
 
-<a id="org7a47079"></a>
+<a id="orgfd8b9cc"></a>
 
 ## Python in Condor
 
 -   **Duncan McL:** If you are running a python script in a condor job, (I recommend) you should always use as the executable either the **absolute path** of a python interpreter, or the **absolute path** of a python script that includes a shebang line that itself includes the **absolute path** of a python interpreter - anything else is just asking for environment troubles.
 
 
-<a id="orgbe47a5e"></a>
+<a id="org1a2b059"></a>
 
 # Condor DAGMan
 
 -   <https://htcondor.readthedocs.io/en/latest/users-manual/dagman-workflows.html>
--   variables used in the Condor submit files `*.sub` are (probably) declared in the dagman `*.dag` files.
-    -   `VARS title(?) var1="value1" var2="value2"`
-    -   when using them in single `*.sub` files (e.g. for debugging) they translate to:
-        
-        ```conf
-        var1=value1
-        var2=value2
-        ```
-        
-        (i.e. without the quotes, even if `valuei` contains spaces).
 
 
-<a id="org73ea929"></a>
+<a id="org3645791"></a>
+
+## Debugging your DAG
+
+-   See also [6](#orgded42b2)
+
+In order to debug your DAG, you may want to rerun only the single job that failed, rather than the whole DAG. Steps could include:
+
+1.  Start from the original HTCondor submit file: `cp <job>.sub <job>_test.sub1` (the extension ensures that it doesn't get deleted by e.g. `make clean` in GstLAL)
+2.  Edit `<job>_test.sub1` to:
+    1.  replace the executable with `<job>_test.sh`
+    2.  (remove the arguments?)
+    3.  replace in the variables used with their values:
+        -   variables in the Condor submit files `*.sub` are (probably) declared in the dagman `*.dag` files.
+            -   check for lines like `VARS title(?) var1="value 1" var2="value 2"`
+            -   when using them in `<job>_test.sub1` they translate to:
+                
+                ```conf
+                var1=value 1
+                var2=value 2
+                ```
+                
+                (i.e. without the quotes, even if `value i` contains spaces).
+        -   especially check the `*_transfer_*` statements, with input/output files that should be **transferred** from the submit node to the compute node and back.
+    4.  ensure that `transfer_executable = True` (`<job>_test.sh` should be transferred to the compute node).
+    5.  ensure stdout and stderr are redirected into files (typically `<job>_test.out/.err`) for examination later.
+3.  Create the script `<job>_test.sh`, which should:
+    1.  run your executable with the proper arguments
+    2.  perhaps feature some `ls` commands (e.g. `ls -lrt`) to check whether all necessary executable and input/output files are present in the Condor scratch directory before/after running your executable
+    3.  other commands like `cat` to check the content of any files or `env` or `echo $VAR` to check the environment on the compte node.
+4.  Submit your test job with `condor_submit <job>_test.sub1` and wait for it to finish or be held (in which case you may want to kill it with `condor_rm <jobnr>`).
+5.  Examine the `*.out` and/or `*.err` files for issues. Note that
+    -   **transfer problems** mean the copying of executable/input/output files between the submit and compute nodes
+        -   the submit node is called **SHADOW**
+        -   the compute node is called **STARTER**
+
+
+<a id="orgbea4956"></a>
 
 # Monitor your DAGs/runs/the cluster
 
@@ -134,7 +162,7 @@ condor_rm <user>    # Remove all <user>'s jobs
 -   set aliases cq, cqa, cqb, cqw, crm, &#x2026;
 
 
-<a id="org92ed407"></a>
+<a id="org5e50b0f"></a>
 
 # Cluster/node/cpu info
 
@@ -145,21 +173,21 @@ condor_status -long   # Detailed info on ALL cpus
 ```
 
 
-<a id="org5e07d1b"></a>
+<a id="orgded42b2"></a>
 
 # OSG/HTCondor troubleshooting
 
 -   Source: OSG user school 2017: <https://opensciencegrid.org/user-school-2017/materials/day2/files/osgus17-day2-part4-troubleshooting.pdf>
 
 
-<a id="orga9f8810"></a>
+<a id="org26a02a8"></a>
 
 ## Condor structure
 
 ![img](Figs/gw-clusters-HTCondor-structure.png)
 
 
-<a id="org3a7a500"></a>
+<a id="orgb80b290"></a>
 
 ## Possible issues
 
@@ -172,7 +200,7 @@ condor_status -long   # Detailed info on ALL cpus
 4.  Note: Errors appears in `*dagman.out` files instead of STDOUT or STDERR
 
 
-<a id="orga443d0f"></a>
+<a id="orgaa78569"></a>
 
 ## What are my jobs up to?
 
@@ -191,7 +219,7 @@ Job status codes:
 -   **S:** `SUSPENDED`
 
 
-<a id="orgb4b338d"></a>
+<a id="org433ec21"></a>
 
 ## Why are my jobs idle?
 
@@ -202,7 +230,7 @@ condor_q -better 29486
 -   shows desired and (un)matched requirements
 
 
-<a id="org5b4808f"></a>
+<a id="orgb357bfa"></a>
 
 ## Why are my jobs still running?
 
@@ -210,7 +238,7 @@ condor_q -better 29486
     -   Non-OSG jobs only!
 
 
-<a id="org92d0ac5"></a>
+<a id="org014b665"></a>
 
 ## Why are my jobs held?
 
@@ -258,7 +286,7 @@ condor_q -held
         ![img](Figs/gw-clusters-HTCondor-shadow-starter.png)
 
 
-<a id="org6795aa0"></a>
+<a id="org9c7be28"></a>
 
 ## My jobs completed, but the output is wrong
 
@@ -269,7 +297,7 @@ condor_q -held
     2.  If it fails, there is an issue with your code or your invocation!
 
 
-<a id="org96d8419"></a>
+<a id="org920243d"></a>
 
 ## Troubleshooting DAGs
 
