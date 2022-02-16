@@ -1,20 +1,20 @@
-- [What problems are we solving?](#org100f2d8)
-    - [Introducing: Singularity](#org04874d0)
-    - [Yet Another Container Syndrome](#orgff81253)
-    - [Important](#org2b9f537)
-    - [Why Docker?](#org68bdcae)
-    - [On Image Distribution](#org56e534b)
-    - [Image Distribution](#orge75d30c)
-    - [Integration with HTCondor](#org08ad94d)
-    - [Example: all jobs into the container](#org3b0a347)
-    - [Example: only on user request](#org55062a2)
-    - [Example: Image based on OS name](#org7316ca9)
-    - [Initial Singularity support for HTCondor](#orgac3d821)
+- [What problems are we solving?](#org422a25c)
+    - [Introducing: Singularity](#org5104cac)
+    - [Yet Another Container Syndrome](#org58cfb5b)
+    - [Important](#orgeb75244)
+    - [Why Docker?](#orgf5c0678)
+    - [On Image Distribution](#org40546fe)
+    - [Image Distribution](#org1fee14b)
+    - [Integration with HTCondor](#orgd085223)
+    - [Example: all jobs into the container](#orge1178b1)
+    - [Example: only on user request](#org32a6aca)
+    - [Example: Image based on OS name](#org04cdb7d)
+    - [Initial Singularity support for HTCondor](#orgef43d79)
 
 -   Source: Brian Bockelman, HTCondor Week 2017: <https://research.cs.wisc.edu/htcondor/HTCondorWeek2017/presentations/WedBockelman_Singularity.pdf>
 
 
-<a id="org100f2d8"></a>
+<a id="org422a25c"></a>
 
 # What problems are we solving?
 
@@ -26,7 +26,7 @@
 3.  **Homogeneous / portable OS environments:** Make user OS environment as minimal and identical as possible!
 
 
-<a id="org04874d0"></a>
+<a id="org5104cac"></a>
 
 # Introducing: Singularity
 
@@ -40,7 +40,7 @@
 <http://singularity.lbl.gov>
 
 
-<a id="orgff81253"></a>
+<a id="org58cfb5b"></a>
 
 # Yet Another Container Syndrome
 
@@ -50,14 +50,14 @@
     3.  Works inside Docker — important for sites that already invest heavily in Docker (like mine!).
 
 
-<a id="org2b9f537"></a>
+<a id="orgeb75244"></a>
 
 # Important
 
 Singularity provides a path to non-setuid isolation And there was great rejoicing!
 
 
-<a id="org68bdcae"></a>
+<a id="orgf5c0678"></a>
 
 # Why Docker?
 
@@ -69,7 +69,7 @@ Singularity provides a path to non-setuid isolation And there was great rejoicin
 3.  **Nebraska uses both:** Docker for site batch system, Singularity for pilots inside the batch system.
 
 
-<a id="org56e534b"></a>
+<a id="org40546fe"></a>
 
 # On Image Distribution
 
@@ -82,7 +82,7 @@ Singularity provides a path to non-setuid isolation And there was great rejoicin
 -   How does one deliver these to thousands of worker nodes?
 
 
-<a id="orge75d30c"></a>
+<a id="org1fee14b"></a>
 
 # Image Distribution
 
@@ -98,7 +98,7 @@ Singularity provides a path to non-setuid isolation And there was great rejoicin
     4.  Does the full image get downloaded to the worker node?
 
 
-<a id="org08ad94d"></a>
+<a id="orgd085223"></a>
 
 # Integration with HTCondor
 
@@ -107,12 +107,12 @@ Singularity provides a path to non-setuid isolation And there was great rejoicin
     1.  SINGULARITY<sub>JOB</sub>: If true, then launch job inside Singularity.
     2.  SINGULARITY<sub>IMAGE</sub><sub>EXPR</sub>: ClassAd expression; evaluated value is the path used for the Singularity image.
     3.  SINGULARITY<sub>TARGET</sub><sub>DIR</sub>: Location inside Singularity container where HTCondor working directory is mapped.
--   See <https://htcondor-wiki.cs.wisc.edu/index.cgi/tktview?tn=5828> for details. Examples follow. See [12](#orgac3d821) below
+-   See <https://htcondor-wiki.cs.wisc.edu/index.cgi/tktview?tn=5828> for details. Examples follow. See [12](#orgef43d79) below
 -   The details are a bit hidden under the cover; still experimenting with the best user interface.
     -   While base functionality is in 8.6.x, more UI work will occur in HTCondor 8.7.x.
 
 
-<a id="org3b0a347"></a>
+<a id="orge1178b1"></a>
 
 # Example: all jobs into the container
 
@@ -146,7 +146,7 @@ Singularity provides a path to non-setuid isolation And there was great rejoicin
     ```
 
 
-<a id="org55062a2"></a>
+<a id="org32a6aca"></a>
 
 # Example: only on user request
 
@@ -164,7 +164,7 @@ Singularity provides a path to non-setuid isolation And there was great rejoicin
     ```
 
 
-<a id="org7316ca9"></a>
+<a id="org04cdb7d"></a>
 
 # Example: Image based on OS name
 
@@ -189,7 +189,7 @@ SINGULARITY_IMAGE_EXPR = \
 ```
 
 
-<a id="orgac3d821"></a>
+<a id="orgef43d79"></a>
 
 # Initial Singularity support for HTCondor
 
@@ -203,6 +203,6 @@ Here is a summary of the changes:
 -   **SINGULARITY:** overrides the default path to the singularity binary.
 -   **MOUNT<sub>UNDER</sub><sub>SCRATCH</sub>:** is respected.
 -   Currently, specifying both `USE_PID_NAMESPACES=True` and `SINGULARITY_JOB` evaluating to `True` is not supported and **will result in failure to start jobs**. Need some improvement here?
--   HTCondor automatically bind mounts the $<sub>CONDOR</sub><sub>SCRATCH</sub><sub>DIR</sub> and IWD.
+-   HTCondor automatically bind mounts the `$_CONDOR_SCRATCH_DIR` and IWD.
 
 Additionally, singularity options can be set in `/etc/singularity/singularity.conf`
