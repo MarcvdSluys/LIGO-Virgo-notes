@@ -1,26 +1,28 @@
-- [Setup once](#org630a73e)
-    - [Workflow](#orgbe6710d)
+- [Setup once](#org616b5d9)
+  - [Workflow](#org7107359)
 
 
-<a id="org630a73e"></a>
+<a id="org616b5d9"></a>
 
 # Setup once
 
 ```bash
 GSTLAL_IMG="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Or one of the alternatives - add to ~/.bashrc prefixed with export?
 GSTLAL_FIR_WHITEN=0  # Set to 0 or 1 - add to ~/.bashrc prefixed with export?
+alias proxy-x509-create="X509_USER_PROXY=x509_proxy ligo-proxy-init -p <albert.einstein>"  # Add to ~/.bashrc (replacing <albert.einstein> with your user name)
+
 singularity exec $GSTLAL_IMG gstlal_grid_profile install  # Install profiles, once per cluster account
 
-# Add Nikhef (Ganymede) profile:
+# Add Nikhef (Ganymede) profile to GstLAL config:
 wget https://raw.githubusercontent.com/MarcvdSluys/LIGO-Virgo-files/master/GstLAL/config/nikhef.yml -O ~/.config/gstlal/nikhef.yml
 ```
 
 
-<a id="orgbe6710d"></a>
+<a id="org7107359"></a>
 
 # Workflow
 
--   for Ganymede
+-   <span class="timestamp-wrapper"><span class="timestamp">[2022-02-09 Wed]</span></span>, for Ganymede
 
 ```bash
 # Choose one (set the default in your ~/.bash_profile ?):
@@ -45,7 +47,7 @@ cd -
 
 singularity exec -B $PWD $GSTLAL_IMG gstlal_inspiral_workflow init -c config.yml  # Create Makefile - Nikhef
 
-proxy-x509-create  # Will ask for your LIGO albert.einstein password
+proxy-x509-create  # Will ask for your LIGO albert.einstein password and create x509_proxy
 
 # export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1 - if not done in your ~/.bashrc
 
@@ -58,5 +60,5 @@ tail -f full_inspiral.dag.dagman.out  # Monitor your DAG whilst running
 
 # Wait...
 
-singularity exec -B $TMPDIR $GSTLAL_IMG make summary
+singularity exec -B $TMPDIR,$PWD $GSTLAL_IMG make summary
 ```
