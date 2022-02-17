@@ -1,25 +1,26 @@
-- [Lingo](#org429674f)
-  - [Condor submit script](#org42bc396)
-    - [Condor submit-script parameters/commands](#org7e7a2d3)
-    - [Python in Condor](#orgfd8b9cc)
-  - [Condor DAGMan](#org1a2b059)
-    - [Debugging your DAG](#org3645791)
-  - [Monitor your DAGs/runs/the cluster](#orgbea4956)
-  - [Cluster/node/cpu info](#org5e50b0f)
-  - [OSG/HTCondor troubleshooting](#orgded42b2)
-    - [Condor structure](#org26a02a8)
-    - [Possible issues](#orgb80b290)
-    - [What are my jobs up to?](#orgaa78569)
-    - [Why are my jobs idle?](#org433ec21)
-    - [Why are my jobs still running?](#orgb357bfa)
-    - [Why are my jobs held?](#org014b665)
-    - [My jobs completed, but the output is wrong](#org9c7be28)
-    - [Troubleshooting DAGs](#org920243d)
+- [Lingo](#org99e7435)
+  - [Condor submit script](#org55c6dc1)
+    - [Condor submit-script parameters/commands](#org155d000)
+    - [Python in Condor](#orgc921c58)
+  - [Condor DAGMan](#org7dc5056)
+    - [Debugging your DAG](#org7896066)
+  - [Monitor your DAGs/runs/the cluster](#org34282f5)
+  - [Cluster/node/cpu info](#orgaa6fa7a)
+  - [OSG/HTCondor troubleshooting](#orgcc9f47e)
+    - [Condor structure](#orgbf05b42)
+    - [Possible issues](#orgee17f24)
+    - [What are my jobs up to?](#org2fde1a8)
+    - [Why are my jobs idle?](#orga976ef8)
+    - [Why are my jobs still running?](#org80c0a1d)
+    - [Why are my jobs held?](#orge25b0b9)
+    - [My jobs completed, but the output is wrong](#org766f11c)
+    - [Troubleshooting DAGs](#orga81ae2a)
 
 -   <https://htcondor.readthedocs.io/en/latest/users-manual/>
+-   <https://computing.docs.ligo.org/guide/condor/tutorial/>
 
 
-<a id="org429674f"></a>
+<a id="org99e7435"></a>
 
 # Lingo
 
@@ -27,7 +28,7 @@
 -   **Starter:** compute node
 
 
-<a id="org42bc396"></a>
+<a id="org55c6dc1"></a>
 
 # Condor submit script
 
@@ -48,7 +49,7 @@ queue
 -   submission: `condor_submit job.sub`
 
 
-<a id="org7e7a2d3"></a>
+<a id="org155d000"></a>
 
 ## Condor submit-script parameters/commands
 
@@ -89,25 +90,25 @@ queue
 -   **`queue`:** queue command (ends the settings)?
 
 
-<a id="orgfd8b9cc"></a>
+<a id="orgc921c58"></a>
 
 ## Python in Condor
 
 -   **Duncan McL:** If you are running a python script in a condor job, (I recommend) you should always use as the executable either the **absolute path** of a python interpreter, or the **absolute path** of a python script that includes a shebang line that itself includes the **absolute path** of a python interpreter - anything else is just asking for environment troubles.
 
 
-<a id="org1a2b059"></a>
+<a id="org7dc5056"></a>
 
 # Condor DAGMan
 
 -   <https://htcondor.readthedocs.io/en/latest/users-manual/dagman-workflows.html>
 
 
-<a id="org3645791"></a>
+<a id="org7896066"></a>
 
 ## Debugging your DAG
 
--   See also [6](#orgded42b2)
+-   See also [6](#orgcc9f47e)
 
 In order to debug your DAG, you may want to rerun only the single job that failed, rather than the whole DAG. Steps could include:
 
@@ -140,7 +141,7 @@ In order to debug your DAG, you may want to rerun only the single job that faile
         -   the compute node is called **STARTER**
 
 
-<a id="orgbea4956"></a>
+<a id="org34282f5"></a>
 
 # Monitor your DAGs/runs/the cluster
 
@@ -162,7 +163,7 @@ condor_rm <user>    # Remove all <user>'s jobs
 -   set aliases cq, cqa, cqb, cqw, crm, &#x2026;
 
 
-<a id="org5e50b0f"></a>
+<a id="orgaa6fa7a"></a>
 
 # Cluster/node/cpu info
 
@@ -173,21 +174,21 @@ condor_status -long   # Detailed info on ALL cpus
 ```
 
 
-<a id="orgded42b2"></a>
+<a id="orgcc9f47e"></a>
 
 # OSG/HTCondor troubleshooting
 
 -   Source: OSG user school 2017: <https://opensciencegrid.org/user-school-2017/materials/day2/files/osgus17-day2-part4-troubleshooting.pdf>
 
 
-<a id="org26a02a8"></a>
+<a id="orgbf05b42"></a>
 
 ## Condor structure
 
 ![img](Figs/gw-clusters-HTCondor-structure.png)
 
 
-<a id="orgb80b290"></a>
+<a id="orgee17f24"></a>
 
 ## Possible issues
 
@@ -200,7 +201,7 @@ condor_status -long   # Detailed info on ALL cpus
 4.  Note: Errors appears in `*dagman.out` files instead of STDOUT or STDERR
 
 
-<a id="orgaa78569"></a>
+<a id="org2fde1a8"></a>
 
 ## What are my jobs up to?
 
@@ -219,7 +220,7 @@ Job status codes:
 -   **S:** `SUSPENDED`
 
 
-<a id="org433ec21"></a>
+<a id="orga976ef8"></a>
 
 ## Why are my jobs idle?
 
@@ -230,7 +231,7 @@ condor_q -better 29486
 -   shows desired and (un)matched requirements
 
 
-<a id="orgb357bfa"></a>
+<a id="org80c0a1d"></a>
 
 ## Why are my jobs still running?
 
@@ -238,7 +239,7 @@ condor_q -better 29486
     -   Non-OSG jobs only!
 
 
-<a id="org014b665"></a>
+<a id="orge25b0b9"></a>
 
 ## Why are my jobs held?
 
@@ -286,7 +287,7 @@ condor_q -held
         ![img](Figs/gw-clusters-HTCondor-shadow-starter.png)
 
 
-<a id="org9c7be28"></a>
+<a id="org766f11c"></a>
 
 ## My jobs completed, but the output is wrong
 
@@ -297,7 +298,7 @@ condor_q -held
     2.  If it fails, there is an issue with your code or your invocation!
 
 
-<a id="org920243d"></a>
+<a id="orga81ae2a"></a>
 
 ## Troubleshooting DAGs
 

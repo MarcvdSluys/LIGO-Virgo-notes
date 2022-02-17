@@ -1,64 +1,68 @@
-- [Setup once](#org616b5d9)
-  - [Workflow](#org7107359)
-
-
-<a id="org616b5d9"></a>
-
-# Setup once
-
-```bash
-GSTLAL_IMG="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Or one of the alternatives - add to ~/.bashrc prefixed with export?
-GSTLAL_FIR_WHITEN=0  # Set to 0 or 1 - add to ~/.bashrc prefixed with export?
-alias proxy-x509-create="X509_USER_PROXY=x509_proxy ligo-proxy-init -p <albert.einstein>"  # Add to ~/.bashrc (replacing <albert.einstein> with your user name)
-
-singularity exec $GSTLAL_IMG gstlal_grid_profile install  # Install profiles, once per cluster account
-
-# Add Nikhef (Ganymede) profile to GstLAL config:
-wget https://raw.githubusercontent.com/MarcvdSluys/LIGO-Virgo-files/master/GstLAL/config/nikhef.yml -O ~/.config/gstlal/nikhef.yml
-```
-
-
-<a id="org7107359"></a>
-
-# Workflow
+- [Setup once](#org6313359)
+  - [Workflow](#orgb52594b)
 
 -   <span class="timestamp-wrapper"><span class="timestamp">[2022-02-09 Wed]</span></span>, for Ganymede
 
+
+<a id="org6313359"></a>
+
+# Setup once
+
+-   Add these lines to your ~/.bashrc (or issue them for every shell):
+    
+    ```bash
+    export SINGULARITY_BIND="/project,/data,/dcache,/tmp"  # Make these shares available in the Singularity containers
+    export GSTLAL_IMG="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Or one of the alternatives
+    export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1
+    
+    alias proxy-x509-create="X509_USER_PROXY=x509_proxy ligo-proxy-init -p <albert.einstein>"  # Replace <albert.einstein> with your user name
+    alias cqw='watch -n 1 condor_q'  # Watch the Condor queue
+    ```
+
+-   Run once (per cluster/submit node):
+    
+    ```bash
+    singularity exec $GSTLAL_IMG gstlal_grid_profile install  # Install profiles, once per cluster/submit node account
+    
+    # Add Nikhef (Ganymede) profile to GstLAL config:
+    wget https://raw.githubusercontent.com/MarcvdSluys/LIGO-Virgo-files/master/GstLAL/config/nikhef.yml
+    singularity exec $GSTLAL_IMG gstlal_grid_profile install nikhef.yml
+    ```
+
+
+<a id="orgb52594b"></a>
+
+# Workflow
+
 ```bash
-# Choose one (set the default in your ~/.bash_profile ?):
-GSTLAL_IMG="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Or one of the alternatives
-cd /path/to/gstlal-dev-container && GSTLAL_IMG="$PWD" && cd -
+GSTLAL_IMG="/cvmfs/singularity.opensciencegrid.org/lscsoft/gstlal:master"     # Or one of the alternatives, if not set in your ~/.bashrc
+export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1 - if not done in your ~/.bashrc
 
-mkdir 001-run-dag && cd 001-run-dag
-
-# Get them fresh:
+# Create a working dir and get the input files fresh:
+mkdir 01-run-dag && cd 01-run-dag
 curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/config.yml
 curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/mass_model/mass_model_small.h5
 curl -O https://git.ligo.org/gstlal/offline-configuration/-/raw/main/bns-small/bank/gstlal_bank_small.xml.gz
+
 # Or copy them from elsewhere:
-cd ../000-run-dag  # Template or previous run
-cp config.yml mass_model_small.h5 gstlal_bank_small.xml.gz $OLDPWD
-cd -
+mkdir 01-run-dag
+cd 00-run-dag  # Template or previous run
+cp config.yml mass_model_small.h5 gstlal_bank_small.xml.gz ../01-run-dag
+cd ../01-run-dag
 
 # Edit config.yml
-# Nikhef:
-#   under source:  data-find-server: datafind.ligo.org:443
-#   under condor:  profile: ldas
+#  under source:  data-find-server: datafind.ligo.org:443
+#  under condor:  profile: nikhef
 
-singularity exec -B $PWD $GSTLAL_IMG gstlal_inspiral_workflow init -c config.yml  # Create Makefile - Nikhef
+proxy-x509-create  # Will ask for your LIGO albert.einstein password and create x509_proxy (using the alias)
 
-proxy-x509-create  # Will ask for your LIGO albert.einstein password and create x509_proxy
+singularity exec $GSTLAL_IMG gstlal_inspiral_workflow init -c config.yml  # Create Makefile
+singularity exec $GSTLAL_IMG make dag                                     # Create the DAG
 
-# export GSTLAL_FIR_WHITEN=0  # Set to 0 or 1 - if not done in your ~/.bashrc
-
-singularity exec -B $TMPDIR,$PWD $GSTLAL_IMG make dag  # Create the DAG - Nikhef
-
-gstlal_nikhef_fix_condor_submission_files  # Nikhef
-
-make launch  &&  watch -n 1 condor_q  # Submit your DAG and monitor it
+make launch  &&  cqw                  # Submit your DAG and monitor it using the alias
 tail -f full_inspiral.dag.dagman.out  # Monitor your DAG whilst running
 
 # Wait...
 
-singularity exec -B $TMPDIR,$PWD $GSTLAL_IMG make summary
+singularity exec $GSTLAL_IMG make summary
 ```
