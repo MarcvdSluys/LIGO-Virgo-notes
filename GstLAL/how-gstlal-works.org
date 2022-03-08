@@ -1,4 +1,4 @@
-# Created 2022-03-03 Thu 14:19
+# Created 2022-03-08 Tue 11:25
 #+title: How the GstLAL pipeline works
 #+author: Marc van der Sluys
 #+export_file_name: ~/diverse/doc/MyDocumentation/LIGO-Virgo-notes/GstLAL/how-gstlal-works
@@ -12,72 +12,83 @@
   2. filtering
   3. ranking
 
+- Note: in file or directory names mentioned below,
+  - ~STARTGPS~ indicates a full (ten-digit) GPS time;
+  - ~GPSTM~ indicates the first five digits;
+  - ~LENG~  indicates the length (typically four digits);
+  - ~IIII~ and ~JJJJ~ indicate some integer between ~0000~ and some maximum ~NNNN~.
+
 * Preprocessing
 ** Measuring the PSD
-1. take a data segment, divide it in \sim 10 batches of \sim 1000s
-   - ~reference_psd~
+1. take a data segment, divide it in e.g. 10 batches of \sim 1000s
+   - results in ~reference_psd/GPSTM/H1L1-GSTLAL_REFERENCE_PSD-STARTGPS-LENG.xml.gz~
 2. take binwise median of all batches
-   - ~median_psd~
-   - ~gstlal_median_of_psds~
-   - Welch method: take 32s, FFT, average
-   - file: ~MEDIAN_PSD-STARTGPS-LENGTH.xml.gz~
-     - xml contains:
-       1. process table
-       2. psd tables
-       3. one table for each detector
-     - use ~python-ligo-lw~ (pypi) to deal with xml files
+   - executable: ~gstlal_median_of_psds~
+     - uses Welch method: take 32s, FFT, average
+   - results in ~median_psd/GPSTM/H1L1-GSTLAL_REFERENCE_PSD-STARTGPS-LENG.xml.gz~, contains
+     1. process table
+     2. psd tables
+     3. one table for each detector
    - used to compute SNR and whiten the bank
-   - in ~median_psd/~ subdir 12381 = first five digits of GPS time
+     - whitening: weighting by noise in frequency domain, FFT back to time domain
+   - note: use ~python-ligo-lw~ (pypi) to deal with xml files
+
 ** Generating injections
-1. Uses ~split_injection~
+1. Executable ~split_injections~
 2. injection file: e.g. BBH with injection GPS file
 3. split into several batches (0-100s), each with (probably) some injections
 4. goal: to compute expected SNR (?)
-5. ~--usertag~ BBH, BNS etc, referring to injection settings in ~config.yml~
+5. ~--usertag~ BBH, BNS etc, referring to injection settings as defined in ~config.yml~
    - ~config.yml~: ~combine: true/false~ treat as a single one or not
-6. ~lalaps-inspinj~ in ~Makefile~
-7. file e.g. ~bbh_injections.xml~
+6. see ~lalaps_inspinj~ in ~Makefile~
+7. injection parameters are in a file called e.g. ~bbh_injections.xml~, ~bns_injections.xml~
+   - table: ~sim_inspiral:table~
+
 ** Generating the SVD template bank
 - bank file: list of BBH components
 - ~sgnl_inspiral:table~: for *both* bank and triggers
 - bank is initially list of parameters, not of waveforms
   - ~gst_svd_bank~ creates set of waveforms from list of parameters
-  - GSTlal does time-domain filtering
-    - SNR time series: match for a range of time shifts - should see SNR of \sim 2 + spike
+  - GSTlal does time-domain filtering using Gstreamer
     - time-domain filtering is slower than frequency-domain filtering
-      - Gstreamer is designed for time-domain filtering
-      - however, you need to do SVD to speed it up
-    - filter data with SVDecomposed data - see paper https://arxiv.org/abs/1604.04324 ->  LLOID method
+      - hence need to do SVD to speed it up
+    - SNR time series: match for a range of time shifts - should see SNR of \sim 2 + spike
+    - filter data with SVDecomposed data - see https://arxiv.org/abs/1604.04324 ->  LLOID method
     - do this for each part of the total bank
       - each part consists of \sim 1000 waveforms
       - each waveform has \sim 30000 data points
-    - see dir ~split_bank/~
-    - time-domain waveforms: ~filter/svd_bank/~
+    - see files ~split_bank/H1L1-IIII_GSTLAL_SPLIT_BANK_JJJJ-0-0.xml.gz~
+    - time-domain waveforms: ~filter/svd_bank/11870/H1-IIII_GSTLAL_SVD_BANK-STARTGPS-LENG.xml.gz~
       - whitened by PSD
-      - whitening: weighting by noise in frequency domain, FFT back to time domain
-- ~config.yml~:
-  - ~svd~ > ~approximant~: notation: - ~x:y:TaylorF2~ means lower chirp-mass limit - upper chirp-mass
-    limit - approximant
-  - ~sampling_max~: sampling rates applied below ~_64Hz~, below ~_256Hz~, etc.
+- ~config.yml~, section ~svd~:
+  - ~approximant~: notation: ~- x:y:TaylorF2~ means: lower chirp-mass limit; upper chirp-mass limit;
+    approximant
+  - ~samples-max-xx~: sampling rates applied below 64 Hz, below 256 Hz, etc.
   - ~overlap~: between tiles of the SVD bank
-  - \[ \chi = \frac{\chi_1 M_1 + \chi_2 M_2}{M_1+M_2} \]
-- PE: use \chi because component spins are degenerate
+  - ~chi~: \[ \chi = \frac{\chi_1 M_1 + \chi_2 M_2}{M_1+M_2} \]
+    - \chi used by PE because component spins are degenerate
 
 * Filtering
 There are two types of filtering: with and without injections.
+
 ** Filtering data only
-- ~gstlal_inspiral~: take raw data, filter them using raw SNR time series
-- uses ~reference_psd~
-- creates ~GSTLAL_TRIGGERS~, ~GSTLAL_DIST_STATS~ files
-- applied separately for each detector
-- calls gstreamer, black box where the magic happens
+- Executable: ~gstlal_inspiral~ (in ~gstlal_inspiral.sub~): take raw data, filter them using raw SNR time
+  series
+- uses ~reference_psd/11870/H1L1-GSTLAL_REFERENCE_PSD-STARTGPS-LENG.xml.gz~
+- creates:
+  - ~filter/triggers/11870/H1L1-IIII_GSTLAL_TRIGGERS-STARTGPS-LENG.xml.gz~
+  - ~filter/dist_stats/11870/H1L1-IIII_GSTLAL_DIST_STATS-STARTGPS-LENG.xml.gz~
+- filtering applied separately for each detector
+- this calls gstreamer - essentially a black box where all the magic happens...
+
 ** Filtering data with injections
-- ~gstlal_inspiral_injection~: same, but on data with injections
-- creates e.g. ~GSTLAL_TRIGGERS_BBH~, ~GSTLAL_DIST_STATS~ files
+- Executable: ~gstlal_inspiral~ (in ~gstlal_inspiral_inj.sub~): same as above, but on data with injections
+- creates ~filter/triggers/11870/H1L1-IIII_GSTLAL_TRIGGERS_BBH-STARTGPS-LENG.xml.gz~ (note ~_BBH~; could be
+  ~_BNS~ etc.)
 - want to compare SNR timeseries of data with and without injections to understand how a *signal* trigger
   looks
-- injections are needed to validate the pipeline every time again, for each analysis
-- also needed for development
+- the injections are needed to validate the pipeline, for each analysis again
+  - they are also needed for development
 
 * Ranking
 - Goal of ranking: is a trigger a signal, or a noise feature?
@@ -87,31 +98,201 @@ There are two types of filtering: with and without injections.
   Ingredients:
   - coincidences between detectors
   - \theta = SVD bank bin
-  - \xi^2 = compare measured and expected time-series SNRs (labelled as \chi^2)
-    - high number indicates a higher probability of a noise feature, hence a lower probability of a signal
-  - new: $\Delta t$, \Delta\phi between detectors must be correlated
+  - \xi^2 = comparison of measured and expected time-series SNRs (labelled as \chi^2)
+    - Note: a high number indicates a higher probability of a noise feature, hence a lower probability of a
+      signal
+  - recently introduced: \Delta t, \Delta \phi between detectors must be correlated
   - mass model: astrophyscial priors?
 - In ~config.yml~:
-  - prior > mass-model (postprocessing), dtdphi (~dist_stats~)
+  - ~prior > mass-model~ (postprocessing), dtdphi (~dist_stats~)
 - likelihood ratio \rightarrow FAR (yr^{-1}) \rightarrow P_astro
 
 ** Summary pages
 1. *Search sensitivity* tab
    - \sim volume of universe you would have covered with your search
    - BNS horizon: BNS 1.4+1.4 at SNR \sim 10
-     - increases when observing longer, hence $V*T$
+     - increases when observing longer, hence V \cdot T
 2. *Backgound* tab (for debugging; to check pipeline):
-   1. high \chi^2/SNR^2 in $\ln P$ noise plot: cannot have any signals
-   2. in $\ln P$ noise plot: SNR $\gtrsim$ 10: looks like detection
-   3. noise vs. signal plot: focus on $\ln L$ ratio > 0
+   1. in \ln P noise plot: there cannot be any signals for high \chi^2/SNR^2
+   2. in \ln P noise plot: SNR \gtrsim 10: looks like detection
+   3. noise vs. signal plot: focus on \ln L ratio > 0
    4. "background" means /noise triggers/
-   5. sharp SNR line between missed and recovered injections
+   5. want a sharp division in SNR between missed and recovered injections
       - e.g. https://ldas-jobs.ligo.caltech.edu/~stefano.schmidt/gstlal/run_nonprecessing_20220208/background.html
 3. *Money plots* tab
    - measure whether the number of triggers at certain FAR matches the expectation from noise
-   - where the thick line veers of to right (probably at N=1): detection
+   - if the thick line veers of to right (probably at N=1): detection
 
-* Links
+* Appendices
+
+** List of common GstLAL executables
+- gstlal_median_of_psds :: 
+
+- gstlal_reference_psd :: 
+
+- gstlal_compute_far_from_snr_chisq_histograms :: 
+
+- gstlal_injsplitter :: 
+
+
+- gstlal_inspiral :: 
+
+- gstlal_inspiral_calc_likelihood :: 
+
+- gstlal_inspiral_calc_rank_pdfs :: 
+
+- gstlal_inspiral_create_prior_diststats :: 
+
+- gstlal_inspiral_injection_snr :: 
+
+- gstlal_inspiral_injection_template_match :: 
+
+- gstlal_inspiral_lnlrcdf_signal :: 
+
+- gstlal_inspiral_make_mc_vtplot :: 
+
+- gstlal_inspiral_marginalize_likelihood :: 
+
+- gstlal_inspiral_plot_background :: 
+
+- gstlal_inspiral_plot_rankingstats_horizon :: 
+
+- gstlal_inspiral_plot_sensitivity :: 
+
+- gstlal_inspiral_plotsummary :: 
+
+- gstlal_inspiral_svd_bank :: 
+
+
+- lalapps_inspinjfind :: 
+
+- lalapps_run_sqlite :: 
+
+
+- ligolw_add :: 
+
+- ligolw_sqlite :: 
+
+** Directory tree after a simple GstLAL run
+Lists of sequential files are abbreviated with an ellipsis as ~fi-0000-le~, ..., ~fi-NNNN-le~ where ~NNNN~ is
+the last number and files exist for all numbers in between.
+
+#+begin_src text
+  .
+  |-- config.yml
+  |-- gstlal_bank_small.xml.gz
+  |-- mass_model_small.h5
+  |-- Makefile
+  |-- x509_proxy
+  |
+  |-- bg_tisi.xml
+  |-- bns_injections.xml
+  |-- CAT1_vetoes.xml.gz
+  |-- segments.xml.gz
+  |-- inj_tisi.xml
+  |-- tisi.xml
+  |-- vetoes.xml.gz
+  |-- svd_manifest.json
+  |
+  |-- full_inspiral_dag.dag
+  |-- full_inspiral_dag.dag.condor.sub
+  |-- full_inspiral_dag.dag.dagman.log
+  |-- full_inspiral_dag.dag.dagman.out
+  |-- full_inspiral_dag.dag.lib.err
+  |-- full_inspiral_dag.dag.lib.out
+  |-- full_inspiral_dag.dag.metrics
+  |-- full_inspiral_dag.dag.nodes.log
+  |-- full_inspiral_dag.sh
+  |
+  |-- *.sub
+  |
+  |
+  |-- filter
+  |   |-- dist_stats
+  |   |   `-- 11870
+  |   |       |-- H1L1-0000_GSTLAL_DIST_STATS-1187000000-1000.xml.gz
+  |   |       |-- ...
+  |   |       `-- H1L1-NNNN_GSTLAL_DIST_STATS-1187000000-1000.xml.gz
+  |   |-- matched_injections
+  |   |   `-- 11870
+  |   |       `-- H1L1-0000_GSTLAL_MATCHED_INJECTIONS_BNS-1187000000-1000.xml
+  |   |-- split_injections
+  |   |   `-- H1K1L1V1-0000_GSTLAL_SPLIT_INJECTIONS_BNS-0-0.xml
+  |   |-- svd_bank
+  |   |   `-- 11870
+  |   |       |-- H1-0000_GSTLAL_SVD_BANK-1187000000-1000.xml.gz
+  |   |       |-- H1-...
+  |   |       |-- H1-NNNN_GSTLAL_SVD_BANK-1187000000-1000.xml.gz
+  |   |       |-- L1-0000_GSTLAL_SVD_BANK-1187000000-1000.xml.gz
+  |   |       |-- L1-...
+  |   |       `-- L1-NNNN_GSTLAL_SVD_BANK-1187000000-1000.xml.gz
+  |   `-- triggers
+  |       `-- 11870
+  |           |-- H1L1-0000_GSTLAL_TRIGGERS-1187000000-1000.xml.gz
+  |           |-- ...
+  |           |-- H1L1-NNNN_GSTLAL_TRIGGERS-1187000000-1000.xml.gz
+  |           |-- H1L1-0000_GSTLAL_TRIGGERS_BNS-1187000000-1000.xml.gz
+  |           |-- ...
+  |           `-- H1L1-NNNN_GSTLAL_TRIGGERS_BNS-1187000000-1000.xml.gz
+  |-- logs
+  |   |-- *.err
+  |   `-- *.out
+  |-- median_psd
+  |   `-- 11870
+  |       `-- H1L1-GSTLAL_MEDIAN_PSD-1187000000-1000.xml.gz
+  |-- plots
+  |   `-- *.png
+  |-- rank
+  |   |-- dist_stat_pdfs
+  |   |   `-- 11870
+  |   |       |-- H1L1-0000_GSTLAL_DIST_STAT_PDFS-1187000000-1000.xml.gz
+  |   |       |-- ...
+  |   |       |-- H1L1-NNNN_GSTLAL_DIST_STAT_PDFS-1187000000-1000.xml.gz
+  |   |       `-- H1L1-GSTLAL_DIST_STAT_PDFS-1187000000-1000.xml.gz
+  |   |-- lnlr_signal_cdf
+  |   |   `-- 11870
+  |   |       `-- H1L1-0000_0000_GSTLAL_LNLR_SIGNAL_CDF_BNS-1187000000-1000.pkl
+  |   |-- marg_dist_stats
+  |   |   `-- 11870
+  |   |       |-- H1L1-0000_GSTLAL_MARG_DIST_STATS-1187000000-1000.xml.gz
+  |   |       |-- ...
+  |   |       `-- H1L1-NNNN_GSTLAL_MARG_DIST_STATS-1187000000-1000.xml.gz
+  |   |-- post_dist_stat_pdfs
+  |   |   `-- 11870
+  |   |       `-- H1L1-GSTLAL_POST_DIST_STAT_PDFS-1187000000-1000.xml.gz
+  |   |-- prior_dist_stats
+  |   |   `-- 11870
+  |   |       |-- H1L1-0000_GSTLAL_PRIOR_DIST_STATS-1187000000-1000.xml.gz
+  |   |       |-- ...
+  |   |       `-- H1L1-NNNN_GSTLAL_PRIOR_DIST_STATS-1187000000-1000.xml.gz
+  |   `-- triggers
+  |       `-- 11870
+  |           |-- H1L1-0000_GSTLAL_TRIGGERS-1187000000-1000.xml.gz
+  |           |-- ...
+  |           |-- H1L1-NNNN_GSTLAL_TRIGGERS-1187000000-1000.xml.gz
+  |           |-- H1L1-0000_GSTLAL_TRIGGERS_BNS-1187000000-1000.xml.gz
+  |           |-- ...
+  |           |-- H1L1-NNNN_GSTLAL_TRIGGERS_BNS-1187000000-1000.xml.gz
+  |           |-- H1L1-GSTLAL_TRIGGERS-1187000000-1000.sqlite
+  |           |-- H1L1-GSTLAL_TRIGGERS-1187000000-1000.xml.gz
+  |           |-- H1L1-GSTLAL_TRIGGERS_BNS-1187000000-1000.sqlite
+  |           `-- H1L1-GSTLAL_TRIGGERS_BNS-1187000000-1000.xml.gz
+  |-- reference_psd
+  |   `-- 11870
+  |       `-- H1L1-GSTLAL_REFERENCE_PSD-1187000000-1000.xml.gz
+  `-- split_bank
+     |-- H1L1-0000_GSTLAL_SPLIT_BANK_0000-0-0.xml.gz
+     |-- H1L1-0000 ...
+     |-- H1L1-0000_GSTLAL_SPLIT_BANK_IIII-0-0.xml.gz
+     |-- H1L1-0001_GSTLAL_SPLIT_BANK_0005-0-0.xml.gz
+     |-- ...
+     |-- H1L1-0001_GSTLAL_SPLIT_BANK_0007-0-0.xml.gz
+      `-- H1L1-NNNN_GSTLAL_SPLIT_BANK_JJJJ-0-0.xml.gz
+
+  30 directories, 759 files
+#+end_src
+
+** Links
 - Stefano's example run: https://ldas-jobs.ligo.caltech.edu/~stefano.schmidt/gstlal/run_nonprecessing_20220208
 - O3 offline runs overview: https://docs.google.com/spreadsheets/d/10O-H2Fyg9K5X2EfSM68slHQ36Cl6FbfTBDJxeP4fF2o
 - Offline searches: https://ldas-jobs.ligo.caltech.edu/~gstlalcbc.offline/
