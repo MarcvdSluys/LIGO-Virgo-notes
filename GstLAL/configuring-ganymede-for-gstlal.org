@@ -1,4 +1,4 @@
-# Created 2022-03-10 Thu 14:10
+# Created 2022-03-10 Thu 17:27
 #+title: Summary: getting GstLAL to run on Ganymede
 #+author: Marc van der Sluys
 * Add Singularity dir to PATH
@@ -24,30 +24,17 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
 - when launching your job from its working directory, you can use ~$PWD~: ~-B $TMPDIR,$PWD~
 * Install LIGO software packages
 - ~proxy-x509-create~ == ~X509_USER_PROXY=x509_proxy ligo-proxy-init -p marc.vandersluys~:
+  - NOTE: ligo username != Nikhef user name
 - DONE: installed many lscsoft/ligo packages e.g. ligo-proxy-utils, lscsoft-all, -frame, -gds, -gstlal(-dev),
   -lalsuite-dev, -ldas-tools(-dev), -ligotools, ...
-- NOTE: ligo username != Nikhef user name
-  - DONE: adapt in bash
 * DAG can be submitted, but first two individual jobs fail
-- from log:
-  #+begin_src text
-    01/21/22 17:18:09 Submitting HTCondor Node split_injections.00000 job(s)...
-    01/21/22 17:18:09 Adding a DAGMan workflow log /user/sluijsm/GstLAL/FirstLight/run-dag-02/./full_inspiral_dag.dag.nodes.log
-    01/21/22 17:18:09 Masking the events recorded in the DAGMAN workflow log
-    01/21/22 17:18:09 Mask for workflow log is 0,1,2,4,5,7,9,10,11,12,13,16,17,24,27,35,36
-    01/21/22 17:18:09 submitting: /usr/bin/condor_submit -a dag_node_name' '=' 'split_injections.00000 -a +DAGManJobId' '=' '761 -a DAGManJobId' '=' '761 -batch-name full_inspiral_dag.dag+761 -a submit_event_notes' '=' 'DAG' 'Node:' 'split_injections.00000 -a dagman_log' '=' '/user/sluijsm/GstLAL/FirstLight/run-dag-02/./full_inspiral_dag.dag.nodes.log -a +DAGManNodesMask' '=' '"0,1,2,4,5,7,9,10,11,12,13,16,17,24,27,35,36" -a nodename' '=' 'split_injections_00000 -a nsplit' '=' '--nsplit' '1 -a usertag' '=' '--usertag' 'BNS -a injection_file' '=' 'bns_injections.xml -a input_injection_file' '=' 'bns_injections.xml -a output_path' '=' '--output-path' 'filter/split_injections -a output_output_path' '=' 'filter/split_injections -a output_split_injections' '=' 'filter/split_injections/H1K1L1V1-0000_GSTLAL_SPLIT_INJECTIONS_BNS-0-0.xml -a DAG_STATUS' '=' '2 -a FAILED_COUNT' '=' '1 -a +KeepClaimIdle' '=' '20 -a notification' '=' 'never -a +DAGParentNodeNames' '=' '"" split_injections.sub
-    01/21/22 17:18:09 From submit: Submitting job(s)
+- from the DAG log:
+#+begin_src text
     01/21/22 17:18:09 From submit: ERROR: invalid value ("ON_SUCCESS") for WhenToTransferOutput. Please either 
     01/21/22 17:18:09 From submit: specify "ON_EXIT", or "ON_EXIT_OR_EVICT" and try again. 
     01/21/22 17:18:09 failed while reading from pipe.
-    01/21/22 17:18:09 Read so far: Submitting job(s)ERROR: invalid value ("ON_SUCCESS") for WhenToTransferOutput. Please either specify "ON_EXIT", or "ON_EXIT_OR_EVICT" and try again. 
-    01/21/22 17:18:09 ERROR: submit attempt failed
-    01/21/22 17:18:09 submit command was: /usr/bin/condor_submit -a dag_node_name' '=' 'split_injections.00000 -a +DAGManJobId' '=' '761 -a DAGManJobId' '=' '761 -batch-name full_inspiral_dag.dag+761 -a submit_event_notes' '=' 'DAG' 'Node:' 'split_injections.00000 -a dagman_log' '=' '/user/sluijsm/GstLAL/FirstLight/run-dag-02/./full_inspiral_dag.dag.nodes.log -a +DAGManNodesMask' '=' '"0,1,2,4,5,7,9,10,11,12,13,16,17,24,27,35,36" -a nodename' '=' 'split_injections_00000 -a nsplit' '=' '--nsplit' '1 -a usertag' '=' '--usertag' 'BNS -a injection_file' '=' 'bns_injections.xml -a input_injection_file' '=' 'bns_injections.xml -a output_path' '=' '--output-path' 'filter/split_injections -a output_output_path' '=' 'filter/split_injections -a output_split_injections' '=' 'filter/split_injections/H1K1L1V1-0000_GSTLAL_SPLIT_INJECTIONS_BNS-0-0.xml -a DAG_STATUS' '=' '2 -a FAILED_COUNT' '=' '1 -a +KeepClaimIdle' '=' '20 -a notification' '=' 'never -a +DAGParentNodeNames' '=' '"" split_injections.sub
-    01/21/22 17:18:09 Job submit try 3/6 failed, will try again in >= 4 seconds.
   #+end_src
-- i.e., ERROR: invalid value ("ON_SUCCESS") for WhenToTransferOutput. Please either specify "ON_EXIT", or
-  "ON_EXIT_OR_EVICT" and try again.
-  - Duncan McLeod: ~ON_SUCCESS~ introduced in HTCondor v8.9.7
+- Duncan McLeod: ~ON_SUCCESS~ introduced in HTCondor v8.9.7
   - WORKAROUND: run-dag-02 for fun: ~sed -i 's|ON_SUCCESS|ON_EXIT|g' *.sub~ and resubmit
   - later solution: upgrade HTCondor to 8.9.13
 * Match HTCondor ClassAds with job requirements
@@ -58,7 +45,7 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
     - between ~make dag~ and ~make launch~
   - RESULT:
 - ~condor_q -better-analyze~:
-  #+begin_src bash
+#+begin_src bash
     condor_q -better-analyze 896
     -- Schedd: visar.nikhef.nl : <145.107.7.239:9618?...
     The Requirements expression for job 896.000 is
@@ -88,7 +75,7 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
   1. job requires CPU of family 6, which we don't have
      - this turns out to come from the ~ldas.yml~ config
      - SOLUTION: create ~nikhef.yml~ for CpuFamily 23
-       #+begin_src bash
+#+begin_src bash
          singularity exec $GSTLAL_IMG gstlal_grid_profile install  # Install GstLAL cluster profiles
 
          # In addition: add the Nikhef (Ganymede) GstLAL profile:
@@ -96,9 +83,9 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
          singularity exec $GSTLAL_IMG gstlal_grid_profile install nikhef.yml
        #+end_src
 
-  2. job requires Singularity, but HAS_SINGULARITY is false
+  2. job requires Singularity, but ~HAS_SINGULARITY~ is false
      - added to HTCondor/signularity config:
-       #+begin_src conf
+#+begin_src conf
          HAS_SINGULARITY = HasSingularity
          STARTD_ATTRS = $(STARTD_ATTRS) HAS_SINGULARITY
        #+end_src
@@ -110,7 +97,7 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
 * Ensure jobs run in a Singularity container
 ** Issue: jobs run, but crash immediately
 - ~logs/split_injections_00000-847-0.err~:
-  #+begin_src text
+#+begin_src text
     Traceback (most recent call last):
       File "/usr/bin/gstlal_injsplitter", line 83, in <module>
         cvs_entry_time=strftime('%Y/%m/%d %H:%M:%S'))
@@ -137,7 +124,7 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
 - RESULTS:
   1. no error when running outside a Singularity container
   2. errors when (trying to) run(ning) inside, e.g.
-     #+begin_src text
+#+begin_src text
        Error from slot1_4@wn-lot-062.nikhef.nl: STARTER at 145.107.5.62 failed to send file(s) to
        <145.107.7.239:9618>: error reading from /var/lib/condor/execute/dir_7370/file2.out: (errno 2)
        No such file or directory; SHADOW failed to receive file(s) from <145.107.5.62:36330>
@@ -157,7 +144,7 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
 * Use correct data server
 - First two jobs now run in a container for some seconds before crashing
 - ~split_injections~ (job1) succeeds but ~gstlal_reference_psd~ (job2) fails
-  #+begin_src python
+#+begin_src python
         Traceback (most recent call last):
         <SNAP>
       File "/usr/lib64/python3.6/http/client.py", line 974, in send
@@ -184,7 +171,7 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
   - no access to Frame files?
   - run test script
   - MvdS: ~gstlal_reference_psd_test.sh~ with command taken from ~full_inspiral_dag.sh~:
-    #+begin_src bash
+#+begin_src bash
       /usr/bin/gstlal_reference_psd -vvv --gps-start-time 1187000000 --gps-end-time 1187001000 --channel-name H1=GWOSC-16KHZ_R1_STRAIN --channel-name L1=GWOSC-16KHZ_R1_STRAIN --data-source frames --psd-fft-length 8 --frame-segments-name datasegments --frame-type H1=H1_GWOSC_O2_16KHZ_R1 --frame-type L1=L1_GWOSC_O2_16KHZ_R1 --data-find-server datafind.ligo.org:443 --frame-segments-file segments.xml.gz --write-psd H1L1-GSTLAL_REFERENCE_PSD-1187000000-1000.xml.gz
 
       ,**
@@ -192,14 +179,14 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
       /srv//condor_exec.exe: line 3:    15 Aborted                 /usr/bin/gstlal_reference_psd -vvv --gps-start-time 1187000000 --gps-end-time 1187001000 --channel-name H1=GWOSC-16KHZ_R1_STRAIN --channel-name L1=GWOSC-16KHZ_R1_STRAIN --data-source frames --psd-fft-length 8 --frame-segments-name datasegments --frame-type H1=H1_GWOSC_O2_16KHZ_R1 --frame-type L1=L1_GWOSC_O2_16KHZ_R1 --data-find-server datafind.ligo.org:443 --frame-segments-file segments.xml.gz --write-psd H1L1-GSTLAL_REFERENCE_PSD-1187000000-1000.xml.gz
     #+end_src
   - The file ~tmpj62n7hwo.cache~ is transferred back and contains
-    #+begin_src text
+#+begin_src text
       H H1_GWOSC_O2_16KHZ_R1 1186996224 4096 file://localhost/cvmfs/gwosc.osgstorage.org/gwdata/O2/strain.16k/frame.v1/H1/1186988032/H-H1_GWOSC_O2_16KHZ_R1-1186996224-4096.gwf
       H H1_GWOSC_O2_16KHZ_R1 1187000320 4096 file://localhost/cvmfs/gwosc.osgstorage.org/gwdata/O2/strain.16k/frame.v1/H1/1186988032/H-H1_GWOSC_O2_16KHZ_R1-1187000320-4096.gwf
       L L1_GWOSC_O2_16KHZ_R1 1186996224 4096 file://localhost/cvmfs/gwosc.osgstorage.org/gwdata/O2/strain.16k/frame.v1/L1/1186988032/L-L1_GWOSC_O2_16KHZ_R1-1186996224-4096.gwf
       L L1_GWOSC_O2_16KHZ_R1 1187000320 4096 file://localhost/cvmfs/gwosc.osgstorage.org/gwdata/O2/strain.16k/frame.v1/L1/1186988032/L-L1_GWOSC_O2_16KHZ_R1-1187000320-4096.gwf
     #+end_src
 - PG: try ~FrChannels /cvmfs/gwosc.osgstorage.org/gwdata/O2/strain.16k/frame.v1/H1/1186988032/H-H1_GWOSC_O2_16KHZ_R1-1186996224-4096.gwf~
-  #+begin_src bash
+#+begin_src bash
     $ FrChannels /cvmfs/gwosc.osgstorage.org/gwdata/O2/strain.16k/frame.v1/H1/1186988032/H-H1_GWOSC_O2_16KHZ_R1-1186996224-4096.gwf
     ,*** Cannot open file /cvmfs/gwosc.osgstorage.org/gwdata/O2/strain.16k/frame.v1/H1/1186988032/H-H1_GWOSC_O2_16KHZ_R1-1186996224-4096.gwf
     ,*** FrError: in FrFileIOpen Open file error (No such file or directory) for file /cvmfs/gwosc.osgstorage.org/gwdata/O2/strain.16k/frame.v1/H1/1186988032/H-H1_GWOSC_O2_16KHZ_R1-1186996224-4096.gwf
@@ -210,7 +197,7 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
 - SOLUTION: ~/cvmfs/gwosc.osgstorage.org~ must be mounted
   - NOTE: it must also be added to the Singularity bind list
   - other urls?
-* Upgrade HTCondor
+* Upgrade HTCondor because of relative paths
 - ~gstlal_median_of_psds~ (job3) fails.  ~gstlal_median_of_psds_00000-1099-0.err~:
 #+begin_src python
   Traceback (most recent call last):
@@ -225,5 +212,3 @@ Add ~/cvmfs/oasis.opensciencegrid.org/mis/singularity/bin~ to ~PATH~ for singula
 - ISSUE: ~preserve_relative_paths~: files in subdirs don't work properly
 - SOLUTION: upgrade HTCondor to v8.9(.13) (from our v8.8)
   - this also adds the ~ON_EXIT~ flag for ~WhenToTransferOutput~
-
-
