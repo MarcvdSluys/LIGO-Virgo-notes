@@ -1,0 +1,94 @@
+# Created 2022-05-17 Tue 17:51
+#+options: toc:nil
+#+title: Create and resolve a git merge conflict
+#+author: Marc van der Sluys
+Note that we need two users for a merge conflict.  I will use GitHub as a remote repository.  User 1 will own
+it, but User 2 will also need (write) access to it.
+
+* User 1 (1/2)
+1. Create an empty local repository.
+2. Specify how to reconcile divergent branches: ~git config --global pull.rebase false~
+3. Create ~hello.py~ and add and commit it.
+   #+begin_src python
+     print('Hello world!')
+   #+end_src
+4. Create a new (empty!) remote GitHub repository.
+5. Invite a collaborator to the GitHub repository.
+6. Add the remote to your local repository and push your code.
+
+* User 2 (1/2)
+1. Accept the GitHub invitation.
+2. Clone the GitHub repository to a new directory.
+3. Edit a code line (e.g. '!' to '??'), and commit and push your new code to the remote.
+   #+begin_src python
+     print('Hello world??')
+   #+end_src
+
+* User 1 (2/2)
+1. Edit the *same* code line (e.g. '!' to '!!!'), commit your code and try to push it.
+   #+begin_src python
+     print('Hello world!!!')
+   #+end_src
+   #+begin_src bash
+     git push  # Shouldn't work because User 2 pushed
+
+     Pushing to github.com:UserName/RepoName.git
+     To github.com:UserName/RepoName.git
+      ! [rejected]        master -> master (fetch first)
+     error: failed to push some refs to 'github.com:UserName/RepoName.git'
+     hint: Updates were rejected because the remote contains work that you do
+     hint: not have locally. This is usually caused by another repository pushing
+     hint: to the same ref. You may want to first integrate the remote changes
+     hint: (e.g., 'git pull ...') before pushing again.
+     hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+   #+end_src
+2. ~git pull~
+   #+begin_src text
+     Auto-merging hello.py
+     CONFLICT (content): Merge conflict in hello.py
+     Automatic merge failed; fix conflicts and then commit the result.
+   #+end_src
+3. ~git status~  # can provide details
+   #+begin_src bash
+     On branch master
+     Your branch and 'Server/master' have diverged,
+     and have 1 and 1 different commits each, respectively.
+       (use "git pull" to merge the remote branch into yours)
+
+     You have unmerged paths.
+       (fix conflicts and run "git commit")
+       (use "git merge --abort" to abort the merge)
+
+     Unmerged paths:
+       (use "git add <file>..." to mark resolution)
+     	both modified:   hello.py
+   #+end_src
+4. Edit ~hello.py~, since the conflict resides there:
+   #+begin_src python
+     <<<<<<< HEAD
+     print('Hello world!!!')
+     =======
+     print('Hello world??')
+     >>>>>>> 081049eb6c245a4fbf94e1be3056c914342f4006
+   #+end_src
+   to e.g.:
+   #+begin_src python
+     print('Hello world!?!?!')
+   #+end_src
+5. ~git status~  # How are we doing?
+   #+begin_src bash
+     All conflicts fixed but you are still merging.
+       (use "git commit" to conclude merge)
+
+     Changes to be committed:
+     	modified:   hello.py
+   #+end_src
+6. ~git commit -a~  # Message template will look like (and provide more comments):
+   #+begin_src text
+     Merge branch 'master' of github.com:UserName/RepoName
+   #+end_src
+7. ~git log~  # Check that all is well
+8. ~git push~
+
+* User 2 (2/2)
+1. ~git pull~
