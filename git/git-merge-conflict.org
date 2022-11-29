@@ -5,7 +5,9 @@
 Note that we need two users for a merge conflict.  I will use GitHub as a remote repository.  User 1 will own
 it, but User 2 will also need (write) access to it.
 
-* User 1 (1/2)
+* Preparation
+
+** User 1
 1. Create an empty local repository.
 2. Specify how to reconcile divergent branches: ~git config --global pull.rebase false~
 3. Create ~hello.py~ and add and commit it.
@@ -16,19 +18,28 @@ it, but User 2 will also need (write) access to it.
 5. Invite a collaborator to the GitHub repository.
 6. Add the remote to your local repository and push your code.
 
-* User 2 (1/2)
+** User 2
 1. Accept the GitHub invitation.
 2. Clone the GitHub repository to a new directory.
-3. Edit a code line (e.g. '!' to '??'), and commit and push your new code to the remote.
+
+   
+* Workflow
+
+** User 1 (1/2)
+1. Edit a code line (e.g. '!' to '??')
    #+begin_src python
      print('Hello world??')
    #+end_src
-
-* User 1 (2/2)
-1. Edit the *same* code line (e.g. '!' to '!!!'), commit your code and try to push it.
+   
+2. Commit and push your new code to the remote.
+   
+** User 2
+1. Edit the *same* code line (e.g. '!' to '!!!')
    #+begin_src python
      print('Hello world!!!')
    #+end_src
+
+2. Commit your code and try to push it.
    #+begin_src bash
      git push  # Shouldn't work because User 2 pushed
 
@@ -42,13 +53,15 @@ it, but User 2 will also need (write) access to it.
      hint: (e.g., 'git pull ...') before pushing again.
      hint: See the 'Note about fast-forwards' in 'git push --help' for details.
    #+end_src
-2. ~git pull~
+   
+3. ~git pull~
    #+begin_src text
      Auto-merging hello.py
      CONFLICT (content): Merge conflict in hello.py
      Automatic merge failed; fix conflicts and then commit the result.
    #+end_src
-3. ~git status~  # can provide details
+   
+4. ~git status~  # can provide details
    #+begin_src bash
      On branch master
      Your branch and 'Server/master' have diverged,
@@ -63,7 +76,8 @@ it, but User 2 will also need (write) access to it.
        (use "git add <file>..." to mark resolution)
      	both modified:   hello.py
    #+end_src
-4. Edit ~hello.py~, since the conflict resides there:
+   
+5. Edit ~hello.py~, since the conflict resides there:
    #+begin_src python
      <<<<<<< HEAD
      print('Hello world!!!')
@@ -75,7 +89,8 @@ it, but User 2 will also need (write) access to it.
    #+begin_src python
      print('Hello world!?!?!')
    #+end_src
-5. ~git status~  # How are we doing?
+   
+6. ~git status~  # How are we doing?
    #+begin_src bash
      All conflicts fixed but you are still merging.
        (use "git commit" to conclude merge)
@@ -83,12 +98,15 @@ it, but User 2 will also need (write) access to it.
      Changes to be committed:
      	modified:   hello.py
    #+end_src
-6. ~git commit -a~  # Message template will look like (and provide more comments):
+   
+7. ~git commit -a~  # Message template will look like (and provide more comments):
    #+begin_src text
      Merge branch 'master' of github.com:UserName/RepoName
    #+end_src
-7. ~git log~  # Check that all is well
-8. ~git push~
+   
+8. ~git log~  # Check that all is well
+   
+9. ~git push~
 
-* User 2 (2/2)
+** User 1 (2/2)
 1. ~git pull~
